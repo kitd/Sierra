@@ -15,18 +15,28 @@
 package org.httprpc.sierra.test;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import org.httprpc.sierra.Outlet;
 import org.httprpc.sierra.SuggestionPicker;
+import org.httprpc.sierra.UILoader;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JTextField;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-import java.util.Arrays;
 
-import static org.httprpc.sierra.UIBuilder.*;
+import static org.httprpc.kilo.util.Collections.*;
 
 public class SuggestionPickerTest extends JFrame implements Runnable {
+    private @Outlet JSpinner countSpinner = null;
+    private @Outlet SuggestionPicker sizeSuggestionPicker = null;
+    private @Outlet SuggestionPicker colorSuggestionPicker = null;
+
+    private @Outlet JButton submitButton = null;
+
+    private @Outlet JLabel selectionLabel = null;
+
     private SuggestionPickerTest() {
         super("Suggestion Picker Test");
 
@@ -35,47 +45,48 @@ public class SuggestionPickerTest extends JFrame implements Runnable {
 
     @Override
     public void run() {
-        setContentPane(column(4, true,
-            row(4,
-                cell(new JLabel("Quantity")),
-                cell(new JTextField(18))
-            ),
-            row(4,
-                cell(new JLabel("Size")),
-                cell(new SuggestionPicker(18)).with(suggestionPicker -> {
-                    suggestionPicker.setSuggestions(Arrays.asList(
-                        "small",
-                        "medium",
-                        "large"
-                    ));
+        setContentPane(UILoader.load(this, "SuggestionPickerTest.xml"));
 
-                    suggestionPicker.addActionListener(event -> System.out.println(suggestionPicker.getText()));
-                })
-            ),
-            row(4,
-                cell(new JLabel("Color")),
-                cell(new SuggestionPicker(18)).with(suggestionPicker -> {
-                    suggestionPicker.setSuggestions(Arrays.asList(
-                        "red",
-                        "orange",
-                        "yellow",
-                        "green",
-                        "blue",
-                        "purple",
-                        "brown",
-                        "black"
-                    ));
+        countSpinner.setModel(new SpinnerNumberModel(0, 0, 10, 1));
 
-                    suggestionPicker.setMaximumRowCount(4);
+        sizeSuggestionPicker.setSuggestions(listOf(
+            "small",
+            "medium",
+            "large"
+        ));
 
-                    suggestionPicker.addActionListener(event -> System.out.println(suggestionPicker.getText()));
-                })
-            ),
-            glue()
-        ).with(contentPane -> contentPane.setBorder(new EmptyBorder(8, 8, 8, 8))).getComponent());
+        sizeSuggestionPicker.addChangeListener(event -> System.out.println(sizeSuggestionPicker.getText()));
 
-        setSize(320, 240);
+        colorSuggestionPicker.setSuggestions(listOf(
+            "red",
+            "orange",
+            "yellow",
+            "green",
+            "blue",
+            "purple",
+            "brown",
+            "black"
+        ));
+
+        colorSuggestionPicker.addChangeListener(event -> System.out.println(colorSuggestionPicker.getText()));
+
+        submitButton.addActionListener(event -> showSelection());
+
+        rootPane.setDefaultButton(submitButton);
+
+        setSize(360, 240);
         setVisible(true);
+    }
+
+    private void showSelection() {
+        var count = (int)countSpinner.getValue();
+
+        var size = sizeSuggestionPicker.getText();
+        var color = colorSuggestionPicker.getText();
+
+        var message = String.format("You selected %d, \"%s\", and \"%s\".", count, size, color);
+
+        selectionLabel.setText(message);
     }
 
     public static void main(String[] args) {

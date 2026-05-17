@@ -22,20 +22,19 @@ import javax.swing.JList;
 import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.event.ListDataListener;
 import java.awt.Component;
 import java.time.LocalTime;
-import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.format.FormatStyle;
-import java.util.Locale;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Text field that supports local time entry.
  */
-public class TimePicker extends Picker {
+public class TimePicker extends TemporalPicker {
     private class TimePickerListModel implements ListModel<LocalTime> {
         @Override
         public int getSize() {
@@ -48,12 +47,12 @@ public class TimePicker extends Picker {
         }
 
         @Override
-        public void addListDataListener(ListDataListener l) {
+        public void addListDataListener(ListDataListener listener) {
             // No-op
         }
 
         @Override
-        public void removeListDataListener(ListDataListener l) {
+        public void removeListDataListener(ListDataListener listener) {
             // No-op
         }
     }
@@ -101,89 +100,68 @@ public class TimePicker extends Picker {
         }
     }
 
-    private int minuteInterval;
-
     private LocalTime time;
+
+    private int minuteInterval = 1;
+    private boolean strict = false;
 
     private LocalTime minimumTime = null;
     private LocalTime maximumTime = null;
 
-    private final InputVerifier inputVerifier = new InputVerifier() {
-        @Override
-        public boolean verify(JComponent input) {
-            try {
-                var time = LocalTime.parse(getText(), timeFormatter);
-
-                if (time.equals(TimePicker.this.time)) {
-                    return true;
-                }
-
-                if (!validate(time)) {
-                    selectAll();
-
-                    return false;
-                }
-
-                TimePicker.this.time = time;
-
-                TimePicker.super.fireActionPerformed();
-            } catch (DateTimeParseException exception) {
-                setText(timeFormatter.format(time));
-            }
-
-            return true;
-        }
-    };
-
-    private static final String pattern;
-    private static final DateTimeFormatter timeFormatter;
-
-    static {
-        var locale = Locale.getDefault();
-
-        pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(null, FormatStyle.SHORT, Chronology.ofLocale(locale), locale);
-        timeFormatter = DateTimeFormatter.ofPattern(pattern);
-    }
+    private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 
     /**
      * Constructs a new time picker.
      */
     public TimePicker() {
-        this(1);
+        setTime(LocalTime.now());
+
+        setInputVerifier(new InputVerifier() {
+            LocalTime time = null;
+
+            @Override
+            public boolean verify(JComponent input) {
+                if (input != TimePicker.this) {
+                    throw new IllegalArgumentException();
+                }
+
+                try {
+                    time = LocalTime.parse(getText(), timeFormatter);
+
+                    return true;
+                } catch (DateTimeParseException exception) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean shouldYieldFocus(JComponent source, JComponent target) {
+                if (verify(source)) {
+                    if (validate(time)) {
+                        if (!time.equals(TimePicker.this.time)) {
+                            TimePicker.this.time = time;
+
+                            fireStateChanged();
+                        }
+                    }
+
+                    applyValue();
+
+                    time = null;
+
+                    return true;
+                } else {
+                    UIManager.getLookAndFeel().provideErrorFeedback(source);
+
+                    return false;
+                }
+            }
+        });
     }
 
-    /**
-     * Constructs a new time picker.
-     *
-     * @param minuteInterval
-     * The minute interval. Must be a value that evenly divides into 60.
-     */
-    public TimePicker(int minuteInterval) {
-        super(6);
-
-        if (60 % minuteInterval != 0) {
-            throw new IllegalArgumentException();
-        }
-
-        this.minuteInterval = minuteInterval;
-
-        setInputVerifier(inputVerifier);
-
-        var now = LocalTime.now();
-
-        setTime(LocalTime.of(now.getHour(), (now.getMinute() / minuteInterval) * minuteInterval));
-
-        putClientProperty("JTextField.placeholderText", pattern);
-    }
-
-    /**
-     * Returns the minute interval.
-     *
-     * @return
-     * The minute interval.
-     */
-    public int getMinuteInterval() {
-        return minuteInterval;
+    @Override
+    protected void applyValue() {
+        setText(timeFormatter.format(time));
     }
 
     /**
@@ -207,15 +185,82 @@ public class TimePicker extends Picker {
             throw new IllegalArgumentException();
         }
 
-        setText(timeFormatter.format(time));
+        if (!time.equals(this.time)) {
+            this.time = truncate(time);
 
-        this.time = truncate(time);
+            applyValue();
+
+            fireStateChanged();
+        }
     }
 
     private boolean validate(LocalTime time) {
-        return (time.getMinute() % minuteInterval == 0
+        return ((minuteInterval == 1 || !strict || time.getMinute() % minuteInterval == 0)
             && (minimumTime == null || !time.isBefore(minimumTime))
             && (maximumTime == null || !time.isAfter(maximumTime)));
+    }
+
+    /**
+     * Returns the minute interval. The default value is 1.
+     *
+     * @return
+     * The minute interval.
+     */
+    public int getMinuteInterval() {
+        return minuteInterval;
+    }
+
+    /**
+     * Sets the minute interval. The value must be between 1 and 30 and must
+     * divide evently into 60. If strict mode is enabled, input will be limited
+     * to this interval.
+     *
+     * @param minuteInterval
+     * The minute interval.
+     */
+    public void setMinuteInterval(int minuteInterval) {
+        if (minuteInterval <= 0 || minuteInterval > 30 || 60 % minuteInterval != 0) {
+            throw new IllegalArgumentException();
+        }
+
+        this.minuteInterval = minuteInterval;
+
+        adjustTime();
+    }
+
+    private LocalTime getTimeAt(int index) {
+        var minutes = index * minuteInterval;
+
+        return LocalTime.of(minutes / 60, minutes % 60);
+    }
+
+    /**
+     * Indicates that strict mode is enabled. The default value is
+     * {@code false}.
+     *
+     * @return
+     * {@code true} if strict mode is enabled; {@code false}, otherwise.
+     */
+    public boolean isStrict() {
+        return strict;
+    }
+
+    /**
+     * Toggles strict mode.
+     *
+     * @param strict
+     * {@code true} to enable strict mode; {@code false} to disable it.
+     */
+    public void setStrict(boolean strict) {
+        this.strict = strict;
+
+        adjustTime();
+    }
+
+    private void adjustTime() {
+        if (minuteInterval > 1 && strict) {
+            setTime(LocalTime.of(time.getHour(), (time.getMinute() / minuteInterval) * minuteInterval));
+        }
     }
 
     /**
@@ -237,7 +282,7 @@ public class TimePicker extends Picker {
     public void setMinimumTime(LocalTime minimumTime) {
         if (minimumTime != null) {
             if (maximumTime != null && minimumTime.isAfter(maximumTime)) {
-                throw new IllegalStateException();
+                throw new IllegalArgumentException();
             }
 
             if (time != null && time.isBefore(minimumTime)) {
@@ -267,7 +312,7 @@ public class TimePicker extends Picker {
     public void setMaximumTime(LocalTime maximumTime) {
         if (maximumTime != null) {
             if (minimumTime != null && maximumTime.isBefore(minimumTime)) {
-                throw new IllegalStateException();
+                throw new IllegalArgumentException();
             }
 
             if (time != null && time.isAfter(maximumTime)) {
@@ -278,29 +323,11 @@ public class TimePicker extends Picker {
         this.maximumTime = truncate(maximumTime);
     }
 
-    /**
-     * Verifies the contents of the text field.
-     * {@inheritDoc}
-     */
-    @Override
-    protected void fireActionPerformed() {
-        inputVerifier.verify(this);
-    }
-
-    /**
-     * Returns {@code true} if the minute interval is 15 minutes or greater;
-     * {@code false}, otherwise.
-     * {@inheritDoc}
-     */
     @Override
     protected boolean isPopupEnabled() {
-        return minuteInterval >= 15;
+        return minuteInterval > 1;
     }
 
-    /**
-     * Returns a time picker popup component.
-     * {@inheritDoc}
-     */
     @Override
     protected JComponent getPopupComponent() {
         var list = new JList<LocalTime>();
@@ -315,12 +342,12 @@ public class TimePicker extends Picker {
 
         scrollPane.setBorder(null);
 
-        list.setSelectedValue(time, true);
+        if (minuteInterval > 1 && time.getMinute() % minuteInterval == 0) {
+            list.setSelectedValue(time, true);
+        }
 
         list.addListSelectionListener(event -> {
             setTime(list.getSelectedValue());
-
-            super.fireActionPerformed();
 
             hidePopup();
         });
@@ -328,13 +355,7 @@ public class TimePicker extends Picker {
         return scrollPane;
     }
 
-    private LocalTime getTimeAt(int index) {
-        var minutes = index * minuteInterval;
-
-        return LocalTime.of(minutes / 60, minutes % 60);
-    }
-
     private static LocalTime truncate(LocalTime time) {
-        return time.withSecond(0).withNano(0);
+        return time.truncatedTo(ChronoUnit.MINUTES);
     }
 }

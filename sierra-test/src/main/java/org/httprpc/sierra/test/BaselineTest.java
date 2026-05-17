@@ -15,21 +15,11 @@
 package org.httprpc.sierra.test;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import org.httprpc.sierra.ImagePane;
+import org.httprpc.sierra.UILoader;
 
-import javax.imageio.ImageIO;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Image;
-import java.io.IOException;
-
-import static org.httprpc.sierra.UIBuilder.*;
 
 public class BaselineTest extends JFrame implements Runnable {
     private BaselineTest() {
@@ -40,43 +30,17 @@ public class BaselineTest extends JFrame implements Runnable {
 
     @Override
     public void run() {
-        var labelFont = javax.swing.UIManager.getDefaults().getFont("Label.font");
-
-        Image checkImage;
-        try {
-            checkImage = ImageIO.read(getClass().getResource("add.png"));
-        } catch (IOException exception) {
-            checkImage = null;
-        }
-
-        setContentPane(row(4, true,
-            glue(),
-            cell(new JLabel("abcdefg")).with(label -> {
-                label.setFont(labelFont.deriveFont(Font.PLAIN, 16));
-                label.setBorder(new LineBorder(Color.LIGHT_GRAY));
-            }),
-            cell(new JLabel("hijk")).with(label -> {
-                label.setFont(labelFont.deriveFont(Font.PLAIN, 32));
-                label.setBorder(new LineBorder(Color.LIGHT_GRAY));
-            }),
-            cell(new ImagePane(checkImage)).with(imagePane -> {
-                imagePane.setPreferredSize(new Dimension(20, 20));
-                imagePane.setScaleMode(ImagePane.ScaleMode.FILL_WIDTH);
-
-                imagePane.setBorder(new LineBorder(Color.LIGHT_GRAY));
-            }),
-            cell(new JLabel("lmnop")).with(label -> {
-                label.setFont(labelFont.deriveFont(Font.PLAIN, 24));
-                label.setBorder(new LineBorder(Color.LIGHT_GRAY));
-            }),
-            glue()
-        ).with(contentPane -> contentPane.setBorder(new EmptyBorder(8, 8, 8, 8))).getComponent());
+        setContentPane(UILoader.load(this, "BaselineTest.xml"));
 
         pack();
         setVisible(true);
     }
 
     public static void main(String[] args) {
+        UILoader.define("small", new Font("Arial", Font.PLAIN, 12));
+        UILoader.define("medium", new Font("Arial", Font.PLAIN, 24));
+        UILoader.define("large", new Font("Arial", Font.BOLD, 48));
+
         FlatLightLaf.setup();
 
         SwingUtilities.invokeLater(new BaselineTest());

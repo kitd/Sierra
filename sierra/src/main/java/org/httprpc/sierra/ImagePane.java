@@ -45,7 +45,6 @@ public class ImagePane extends JComponent {
         FILL_HEIGHT
     }
 
-    // Image pane UI
     private class ImagePaneUI extends ComponentUI {
         @Override
         public Dimension getMinimumSize(JComponent component) {
@@ -63,21 +62,25 @@ public class ImagePane extends JComponent {
                 return new Dimension(0, 0);
             }
 
-            var size = getSize();
             var insets = getInsets();
 
-            var width = Math.max(size.width - (insets.left + insets.right), 0);
-            var height = Math.max(size.height - (insets.top + insets.bottom), 0);
+            var width = Math.max(getWidth() - (insets.left + insets.right), 0);
+            var height = Math.max(getHeight() - (insets.top + insets.bottom), 0);
 
             var imageWidth = image.getWidth(null);
             var imageHeight = image.getHeight(null);
 
-            var scale = getScale(width, height, imageWidth, imageHeight);
+            double scale;
+            if (width > 0 && height > 0) {
+                scale = getScale(width, height, imageWidth, imageHeight);
+            } else {
+                scale = 1.0;
+            }
 
-            var preferredWidth = (int)Math.round(imageWidth * scale) + insets.left + insets.right;
-            var preferredHeight = (int)Math.round(imageHeight * scale) + insets.top + insets.bottom;
+            var preferredWidth = scale * imageWidth + (insets.left + insets.right);
+            var preferredHeight = scale * imageHeight + (insets.top + insets.bottom);
 
-            return new Dimension(preferredWidth, preferredHeight);
+            return new Dimension((int)Math.ceil(preferredWidth), (int)Math.ceil(preferredHeight));
         }
 
         @Override
@@ -95,11 +98,10 @@ public class ImagePane extends JComponent {
                 return;
             }
 
-            var size = getSize();
             var insets = getInsets();
 
-            var width = Math.max(size.width - (insets.left + insets.right), 0);
-            var height = Math.max(size.height - (insets.top + insets.bottom), 0);
+            var width = Math.max(getWidth() - (insets.left + insets.right), 0);
+            var height = Math.max(getHeight() - (insets.top + insets.bottom), 0);
 
             var imageWidth = image.getWidth(null);
             var imageHeight = image.getHeight(null);
@@ -109,16 +111,11 @@ public class ImagePane extends JComponent {
             var scaledImageWidth = scale * imageWidth;
             var scaledImageHeight = scale * imageHeight;
 
-            var x = switch (horizontalAlignment) {
-                case LEADING, TRAILING -> {
-                    if (getComponentOrientation().isLeftToRight() ^ horizontalAlignment == HorizontalAlignment.TRAILING) {
-                        yield 0;
-                    } else {
-                        yield width - scaledImageWidth;
-                    }
-
-                }
+            var x = switch (horizontalAlignment.getLocalizedValue(ImagePane.this)) {
+                case LEFT -> 0;
+                case RIGHT -> width - scaledImageWidth;
                 case CENTER -> (width - scaledImageWidth) / 2;
+                default -> throw new UnsupportedOperationException();
             };
 
             var y = switch (verticalAlignment) {
@@ -128,8 +125,6 @@ public class ImagePane extends JComponent {
             };
 
             graphics = (Graphics2D)graphics.create();
-
-            graphics.setClip(insets.left, insets.top, width, height);
 
             graphics.translate(x + insets.left, y + insets.top);
             graphics.scale(scale, scale);
@@ -142,8 +137,8 @@ public class ImagePane extends JComponent {
         private double getScale(int width, int height, int imageWidth, int imageHeight) {
             return switch (scaleMode) {
                 case NONE -> 1.0;
-                case FILL_WIDTH -> (double)width / imageWidth;
-                case FILL_HEIGHT -> (double)height / imageHeight;
+                case FILL_WIDTH -> imageWidth > 0 ? (double)width / imageWidth : 1.0;
+                case FILL_HEIGHT -> imageHeight > 0 ? (double)height / imageHeight : 1.0;
             };
         }
     }
@@ -156,14 +151,14 @@ public class ImagePane extends JComponent {
     private VerticalAlignment verticalAlignment = VerticalAlignment.CENTER;
 
     /**
-     * Constructs an image pane.
+     * Constructs a new image pane.
      */
     public ImagePane() {
         this(null);
     }
 
     /**
-     * Constructs an image pane.
+     * Constructs a new image pane.
      *
      * @param image
      * The image to display, or {@code null} for no image.
@@ -194,6 +189,7 @@ public class ImagePane extends JComponent {
         this.image = image;
 
         revalidate();
+        repaint();
     }
 
     /**
@@ -220,6 +216,7 @@ public class ImagePane extends JComponent {
         this.scaleMode = scaleMode;
 
         revalidate();
+        repaint();
     }
 
     /**

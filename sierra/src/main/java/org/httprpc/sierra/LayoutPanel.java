@@ -69,37 +69,26 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
         public Dimension maximumLayoutSize(Container container) {
             return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
         }
-
-        @Override
-        public Dimension preferredLayoutSize(Container container) {
-            return preferredLayoutSize();
-        }
-
-        protected abstract Dimension preferredLayoutSize();
-
-        @Override
-        public void layoutContainer(Container container) {
-            layoutContainer();
-        }
-
-        protected abstract void layoutContainer();
     }
 
     private List<Object> constraints = new ArrayList<>();
 
-    private boolean scrollableTracksViewportWidth;
-    private boolean scrollableTracksViewportHeight;
+    private boolean scrollableTracksViewportWidth = false;
+    private boolean scrollableTracksViewportHeight = false;
 
     LayoutPanel() {
-        super(null);
+        super(null, false);
 
         setOpaque(false);
+
+        setAlignmentX(0.5f);
+        setAlignmentY(0.5f);
     }
 
-    /**
-     * Adds a component to the panel.
-     * {@inheritDoc}
-     */
+    Object getConstraints(int index) {
+        return constraints.get(index);
+    }
+
     @Override
     protected void addImpl(Component component, Object constraints, int index) {
         super.addImpl(component, constraints, index);
@@ -110,10 +99,6 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
         repaint();
     }
 
-    /**
-     * Removes a component from the panel.
-     * {@inheritDoc}
-     */
     @Override
     public void remove(int index) {
         super.remove(index);
@@ -124,10 +109,6 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
         repaint();
     }
 
-    /**
-     * Removes all components from the panel.
-     * {@inheritDoc}
-     */
     @Override
     public void removeAll() {
         super.removeAll();
@@ -138,69 +119,27 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
         repaint();
     }
 
-    /**
-     * Returns the constraints associated with the component at a given index.
-     *
-     * @param index
-     * The component index.
-     *
-     * @return
-     * The component's constraints, or {@code null} if no weight is associated
-     * with the component
-     */
-    protected Object getConstraints(int index) {
-        return constraints.get(index);
-    }
-
-    /**
-     * Returns the panel's preferred size.
-     * {@inheritDoc}
-     */
     @Override
     public Dimension getPreferredScrollableViewportSize() {
         return getPreferredSize();
     }
 
-    /**
-     * Returns 10% of the visible height for vertical orientations and 10% of
-     * the visible width for horizontal orientations.
-     * {@inheritDoc}
-     */
     @Override
     public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
-        if (visibleRect == null) {
-            throw new IllegalArgumentException();
-        }
-
-        return switch (orientation) {
-            case SwingConstants.VERTICAL -> visibleRect.height / 10;
-            case SwingConstants.HORIZONTAL -> visibleRect.width / 10;
-            default -> throw new UnsupportedOperationException();
-        };
+        return getScrollableBlockIncrement(visibleRect, orientation, direction) / 4;
     }
 
-    /**
-     * Returns the visible height for vertical orientations and the visible
-     * width for horizontal orientations.
-     * {@inheritDoc}
-     */
     @Override
     public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
-        if (visibleRect == null) {
-            throw new IllegalArgumentException();
-        }
+        var size = getSize();
 
         return switch (orientation) {
-            case SwingConstants.VERTICAL -> visibleRect.height;
-            case SwingConstants.HORIZONTAL -> visibleRect.width;
+            case SwingConstants.VERTICAL -> size.height / 10;
+            case SwingConstants.HORIZONTAL -> size.width / 10;
             default -> throw new UnsupportedOperationException();
         };
     }
 
-    /**
-     * Indicates that the panel tracks viewport width.
-     * {@inheritDoc}
-     */
     @Override
     public boolean getScrollableTracksViewportWidth() {
         return scrollableTracksViewportWidth;
@@ -210,7 +149,8 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
      * Toggles viewport width tracking.
      *
      * @param scrollableTracksViewportWidth
-     * {@code true} to track viewport width; {@code false}, otherwise.
+     * {@code true} to enable viewport width tracking; {@code false} to disable
+     * it.
      */
     public void setScrollableTracksViewportWidth(boolean scrollableTracksViewportWidth) {
         this.scrollableTracksViewportWidth = scrollableTracksViewportWidth;
@@ -218,11 +158,7 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
         revalidate();
     }
 
-    /**
-     * Indicates that the panel tracks viewport height.
-     * {@inheritDoc}
-     */
-     @Override
+    @Override
     public boolean getScrollableTracksViewportHeight() {
         return scrollableTracksViewportHeight;
     }
@@ -231,7 +167,8 @@ public abstract class LayoutPanel extends JPanel implements Scrollable {
      * Toggles viewport height tracking.
      *
      * @param scrollableTracksViewportHeight
-     * {@code true} to track viewport height; {@code false}, otherwise.
+     * {@code true} to enable viewport height tracking; {@code false} to
+     * disable it.
      */
     public void setScrollableTracksViewportHeight(boolean scrollableTracksViewportHeight) {
         this.scrollableTracksViewportHeight = scrollableTracksViewportHeight;

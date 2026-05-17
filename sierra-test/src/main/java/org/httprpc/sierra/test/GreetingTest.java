@@ -15,19 +15,20 @@
 package org.httprpc.sierra.test;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import org.httprpc.sierra.ColumnPanel;
 import org.httprpc.sierra.HorizontalAlignment;
 import org.httprpc.sierra.ImagePane;
 import org.httprpc.sierra.TextPane;
+import org.httprpc.sierra.UILoader;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
-import java.awt.Image;
 import java.io.IOException;
 
-import static org.httprpc.sierra.UIBuilder.*;
+import static org.httprpc.kilo.util.Optionals.*;
 
 public class GreetingTest extends JFrame implements Runnable {
     private GreetingTest() {
@@ -38,21 +39,38 @@ public class GreetingTest extends JFrame implements Runnable {
 
     @Override
     public void run() {
-        Image image;
-        try {
-            image = ImageIO.read(getClass().getResource("world.png"));
-        } catch (IOException exception) {
-            image = null;
-        }
+        var declarative = coalesce(map(System.getProperty("declarative"), Boolean::valueOf), () -> true);
 
-        setContentPane(column(4,
-            cell(new ImagePane(image)).with(imagePane -> imagePane.setScaleMode(ImagePane.ScaleMode.FILL_WIDTH)),
-            cell(new TextPane("Hello, World!")).with(textPane -> textPane.setHorizontalAlignment(HorizontalAlignment.CENTER))
-        ).with(contentPane -> {
-            contentPane.setBackground(Color.WHITE);
-            contentPane.setOpaque(true);
-            contentPane.setBorder(new EmptyBorder(8, 8, 8, 8));
-        }).getComponent());
+        if (declarative) {
+            setContentPane(UILoader.load(this, "GreetingTest.xml"));
+        } else {
+            var columnPanel = new ColumnPanel();
+
+            columnPanel.setBorder(new EmptyBorder(8, 8, 8, 8));
+
+            columnPanel.setOpaque(true);
+            columnPanel.setBackground(Color.WHITE);
+
+            var imagePane = new ImagePane();
+
+            try (var inputStream = getClass().getResourceAsStream("world.png")) {
+                imagePane.setImage(ImageIO.read(inputStream));
+            } catch (IOException exception) {
+                throw new RuntimeException(exception);
+            }
+
+            imagePane.setScaleMode(ImagePane.ScaleMode.FILL_WIDTH);
+
+            columnPanel.add(imagePane);
+
+            var textPane = new TextPane("Hello, World!");
+
+            textPane.setHorizontalAlignment(HorizontalAlignment.CENTER);
+
+            columnPanel.add(textPane);
+
+            setContentPane(columnPanel);
+        }
 
         setSize(320, 480);
         setVisible(true);

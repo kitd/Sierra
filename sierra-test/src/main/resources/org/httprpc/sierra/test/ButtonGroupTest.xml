@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE column-panel SYSTEM "sierra.dtd">
+
+<column-panel spacing="8" padding="8" opaque="true">
+    <row-panel spacing="8">
+        <row-panel>
+            <toggle-button name="alignLeftButton"
+                icon="icons/format_align_left_24dp.svg"
+                style="buttonType: toolBarButton"
+                group="alignment"/>
+
+            <separator orientation="vertical"/>
+
+            <toggle-button name="alignCenterButton"
+                icon="icons/format_align_center_24dp.svg"
+                style="buttonType: toolBarButton"
+                group="alignment"/>
+
+            <separator orientation="vertical"/>
+
+            <toggle-button name="alignRightButton"
+                icon="icons/format_align_right_24dp.svg"
+                style="buttonType: toolBarButton"
+                group="alignment"/>
+
+            <separator orientation="vertical"/>
+
+            <toggle-button name="alignJustifyButton"
+                icon="icons/format_align_justify_24dp.svg"
+                style="buttonType: toolBarButton"
+                group="alignment"/>
+        </row-panel>
+
+        <label name="selectionLabel"/>
+    </row-panel>
+</column-panel>

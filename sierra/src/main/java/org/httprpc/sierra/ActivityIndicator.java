@@ -25,8 +25,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.RoundRectangle2D;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Shows indeterminate progress.
@@ -73,8 +73,6 @@ public class ActivityIndicator extends JComponent {
 
             graphics = (Graphics2D)graphics.create();
 
-            graphics.setClip(insets.left, insets.top, width, height);
-
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             var radius = indicatorSize / 2;
@@ -111,7 +109,7 @@ public class ActivityIndicator extends JComponent {
 
     private static int angle = 0;
 
-    private static List<ActivityIndicator> activeInstances = new LinkedList<>();
+    private static Set<ActivityIndicator> activeInstances = new HashSet<>();
 
     private static final int SPOKE_COUNT = 8;
 
@@ -139,18 +137,11 @@ public class ActivityIndicator extends JComponent {
      * The indicator size.
      */
     public ActivityIndicator(int indicatorSize) {
+        setIndicatorSize(indicatorSize);
+
         setUI(new ActivityIndicatorUI());
 
-        this.indicatorSize = indicatorSize;
-
-        var spokeWidth = indicatorSize / 3;
-        var spokeHeight = indicatorSize / 8;
-
-        spokeShape = new RoundRectangle2D.Double(spokeWidth / 2.0, -spokeHeight / 2.0, spokeWidth, spokeHeight, spokeHeight, spokeHeight);
-
-        if (UIManager.getLookAndFeelDefaults().get("Label.disabledForeground") instanceof Color foreground) {
-            setForeground(foreground);
-        }
+        setForeground(UIManager.getColor("Label.disabledForeground"));
     }
 
     /**
@@ -161,6 +152,28 @@ public class ActivityIndicator extends JComponent {
      */
     public int getIndicatorSize() {
         return indicatorSize;
+    }
+
+    /**
+     * Sets the indicator size.
+     *
+     * @param indicatorSize
+     * The indicator size.
+     */
+    public void setIndicatorSize(int indicatorSize) {
+        if (indicatorSize < 12) {
+            throw new IllegalArgumentException();
+        }
+
+        this.indicatorSize = indicatorSize;
+
+        var spokeWidth = indicatorSize / 3.0;
+        var spokeHeight = indicatorSize / 8.0;
+
+        spokeShape = new RoundRectangle2D.Double(spokeWidth / 2, -spokeHeight / 2, spokeWidth, spokeHeight, spokeHeight, spokeHeight);
+
+        revalidate();
+        repaint();
     }
 
     /**

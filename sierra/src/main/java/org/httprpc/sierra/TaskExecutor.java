@@ -15,6 +15,8 @@
 package org.httprpc.sierra;
 
 import javax.swing.SwingUtilities;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
@@ -25,6 +27,9 @@ import java.util.function.BiConsumer;
  */
 public class TaskExecutor {
     private ExecutorService executorService;
+
+    private int count = 0;
+    private List<Runnable> listeners = new LinkedList<>();
 
     /**
      * Constructs a new task executor.
@@ -46,25 +51,67 @@ public class TaskExecutor {
      * @param <T>
      * The result type.
      *
-     * @param callable
+     * @param task
      * The task to execute.
      *
-     * @param consumer
+     * @param handler
      * The result handler.
      */
-    public <T> void execute(Callable<T> callable, BiConsumer<T, Exception> consumer) {
-        if (callable == null || consumer == null) {
+    public <T> void execute(Callable<T> task, BiConsumer<T, Exception> handler) {
+        if (task == null || handler == null) {
             throw new IllegalArgumentException();
         }
 
+        if (!SwingUtilities.isEventDispatchThread()) {
+            throw new WrongThreadException();
+        }
+
+        count++;
+
         executorService.submit(() -> {
             try {
-                var result = callable.call();
+                var result = task.call();
 
-                SwingUtilities.invokeLater(() -> consumer.accept(result, null));
+                SwingUtilities.invokeLater(() -> {
+                    handler.accept(result, null);
+
+                    complete();
+                });
             } catch (Exception exception) {
-                SwingUtilities.invokeLater(() -> consumer.accept(null, exception));
+                SwingUtilities.invokeLater(() -> {
+                    handler.accept(null, exception);
+
+                    complete();
+                });
             }
         });
+    }
+
+    private void complete() {
+        if (--count == 0 && !listeners.isEmpty()) {
+            for (var listener : listeners) {
+                listener.run();
+            }
+
+            listeners.clear();
+        }
+    }
+
+    /**
+     * Adds a completion listener.
+     *
+     * @param listener
+     * A callback that will be notified when all pending tasks are complete.
+     */
+    public void notify(Runnable listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException();
+        }
+
+        if (!SwingUtilities.isEventDispatchThread()) {
+            throw new WrongThreadException();
+        }
+
+        listeners.add(listener);
     }
 }

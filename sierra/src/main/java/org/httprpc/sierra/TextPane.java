@@ -15,25 +15,22 @@
 package org.httprpc.sierra;
 
 import javax.swing.JComponent;
+import javax.swing.UIManager;
 import javax.swing.plaf.ComponentUI;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.Toolkit;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Displays a string of text.
  */
 public class TextPane extends JComponent {
-    // Text pane UI
     private class TextPaneUI extends ComponentUI {
         @Override
         public Dimension getMinimumSize(JComponent component) {
@@ -53,17 +50,18 @@ public class TextPane extends JComponent {
 
             var insets = getInsets();
 
+            var width = Math.max(getWidth() - (insets.left + insets.right), 0);
+
             var font = getFont();
+            var fontRenderContext = getFontMetrics(font).getFontRenderContext();
 
             double textWidth;
             double textHeight;
-            if (wrapText) {
+            if (wrapText && width > 0) {
                 var lineHeight = font.getLineMetrics("", fontRenderContext).getHeight();
 
                 textWidth = 0.0;
                 textHeight = lineHeight;
-
-                var width = Math.max(getWidth() - (insets.left + insets.right), 0);
 
                 var lineWidth = 0.0;
                 var lastWhitespaceIndex = -1;
@@ -111,25 +109,7 @@ public class TextPane extends JComponent {
 
         @Override
         public int getBaseline(JComponent component, int width, int height) {
-            if (text == null || verticalAlignment == VerticalAlignment.CENTER) {
-                return -1;
-            }
-
-            var insets = getInsets();
-
-            var lineMetrics = getFont().getLineMetrics("", fontRenderContext);
-
-            var ascent = lineMetrics.getAscent();
-
-            return switch (verticalAlignment) {
-                case TOP -> insets.top + Math.round(ascent);
-                case BOTTOM -> {
-                    var lineHeight = lineMetrics.getHeight();
-
-                    yield height - (insets.bottom + Math.round(lineHeight - ascent));
-                }
-                default -> throw new UnsupportedOperationException();
-            };
+            return -1;
         }
 
         @Override
@@ -149,6 +129,7 @@ public class TextPane extends JComponent {
             var height = Math.max(size.height - (insets.top + insets.bottom), 0);
 
             var font = getFont();
+            var fontRenderContext = getFontMetrics(font).getFontRenderContext();
 
             var ascent = font.getLineMetrics("", fontRenderContext).getAscent();
 
@@ -159,8 +140,6 @@ public class TextPane extends JComponent {
             };
 
             graphics = (Graphics2D)graphics.create();
-
-            graphics.setClip(insets.left, insets.top, width, height);
 
             graphics.setColor(getForeground());
             graphics.setFont(font);
@@ -174,16 +153,11 @@ public class TextPane extends JComponent {
 
                 var lineWidth = textBounds.getWidth();
 
-                var x = switch (horizontalAlignment) {
-                    case LEADING, TRAILING -> {
-                        if (getComponentOrientation().isLeftToRight() ^ horizontalAlignment == HorizontalAlignment.TRAILING) {
-                            yield insets.left;
-                        } else {
-                            yield size.width - (lineWidth + insets.right);
-                        }
-
-                    }
+                var x = switch (horizontalAlignment.getLocalizedValue(TextPane.this)) {
+                    case LEFT -> insets.left;
+                    case RIGHT -> size.width - (lineWidth + insets.right);
                     case CENTER -> insets.left + (width - lineWidth) / 2;
+                    default -> throw new UnsupportedOperationException();
                 };
 
                 graphics.drawGlyphVector(glyphVector, (float)x, (float)y + ascent);
@@ -205,43 +179,23 @@ public class TextPane extends JComponent {
     private List<GlyphVector> glyphVectors = new ArrayList<>();
     private double textHeight = 0.0;
 
-    private static final FontRenderContext fontRenderContext;
-    static {
-        var fontDesktopHints = (Map<?, ?>)Toolkit.getDefaultToolkit().getDesktopProperty("awt.font.desktophints");
-
-        Object aaHint = null;
-        Object fmHint = null;
-        if (fontDesktopHints != null) {
-            aaHint = fontDesktopHints.get(RenderingHints.KEY_TEXT_ANTIALIASING);
-            fmHint = fontDesktopHints.get(RenderingHints.KEY_FRACTIONALMETRICS);
-        }
-
-        if (aaHint == null) {
-            aaHint = RenderingHints.VALUE_TEXT_ANTIALIAS_DEFAULT;
-        }
-
-        if (fmHint == null) {
-            fmHint = RenderingHints.VALUE_FRACTIONALMETRICS_DEFAULT;
-        }
-
-        fontRenderContext = new FontRenderContext(null, aaHint, fmHint);
-    }
-
     /**
-     * Constructs a text pane.
+     * Constructs a new text pane.
      */
     public TextPane() {
         this(null);
     }
 
     /**
-     * Constructs a text pane.
+     * Constructs a new text pane.
      *
      * @param text
      * The text to display, or {@code null} for no text.
      */
     public TextPane(String text) {
         this.text = text;
+
+        setFont(UIManager.getFont("Label.font"));
 
         setUI(new TextPaneUI());
     }
@@ -266,6 +220,7 @@ public class TextPane extends JComponent {
         this.text = text;
 
         revalidate();
+        repaint();
     }
 
     /**
@@ -284,12 +239,13 @@ public class TextPane extends JComponent {
      * Toggles line wrapping.
      *
      * @param wrapText
-     * {@code true} to wrap text when needed; {@code false}, otherwise.
+     * {@code true} to enable line wrapping; {@code false} to disable it.
      */
     public void setWrapText(boolean wrapText) {
         this.wrapText = wrapText;
 
         revalidate();
+        repaint();
     }
 
     /**
@@ -346,10 +302,6 @@ public class TextPane extends JComponent {
         repaint();
     }
 
-    /**
-     * Lays out the text pane.
-     * {@inheritDoc}
-     */
     @Override
     public void doLayout() {
         glyphVectors.clear();
@@ -362,6 +314,7 @@ public class TextPane extends JComponent {
             var width = Math.max(getWidth() - (insets.left + insets.right), 0);
 
             var font = getFont();
+            var fontRenderContext = getFontMetrics(font).getFontRenderContext();
 
             if (wrapText) {
                 var n = text.length();
@@ -381,7 +334,7 @@ public class TextPane extends JComponent {
                     lineWidth += font.getStringBounds(text, i, i + 1, fontRenderContext).getWidth();
 
                     if (lineWidth > width && lastWhitespaceIndex != -1) {
-                        appendLine(font, start, lastWhitespaceIndex);
+                        appendLine(font, fontRenderContext, start, lastWhitespaceIndex);
 
                         i = lastWhitespaceIndex;
                         start = i + 1;
@@ -392,14 +345,14 @@ public class TextPane extends JComponent {
                     i++;
                 }
 
-                appendLine(font, start, i);
+                appendLine(font, fontRenderContext, start, i);
             } else {
-                appendLine(font, 0, text.length());
+                appendLine(font, fontRenderContext, 0, text.length());
             }
         }
     }
 
-    private void appendLine(Font font, int start, int end) {
+    private void appendLine(Font font, FontRenderContext fontRenderContext, int start, int end) {
         var glyphVector = font.createGlyphVector(fontRenderContext, new StringCharacterIterator(text, start, end, start));
 
         glyphVectors.add(glyphVector);

@@ -15,7 +15,9 @@
 package org.httprpc.sierra.test;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import org.httprpc.sierra.HorizontalAlignment;
 import org.httprpc.sierra.TextPane;
+import org.httprpc.sierra.VerticalAlignment;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -23,8 +25,6 @@ import javax.swing.border.LineBorder;
 import java.awt.Color;
 
 public class TextPaneTest extends JFrame implements Runnable {
-    private static final String TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
-
     private TextPaneTest() {
         super("Text Pane Test");
 
@@ -33,16 +33,18 @@ public class TextPaneTest extends JFrame implements Runnable {
 
     @Override
     public void run() {
-        var textPane = new TextPane(TEXT);
+        var textPane = new TextPane("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
 
         textPane.setBackground(Color.WHITE);
         textPane.setOpaque(true);
         textPane.setWrapText(true);
+        textPane.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        textPane.setVerticalAlignment(VerticalAlignment.CENTER);
         textPane.setBorder(new LineBorder(Color.LIGHT_GRAY, 16));
 
         setContentPane(textPane);
 
-        setSize(320, 240);
+        pack();
         setVisible(true);
     }
 

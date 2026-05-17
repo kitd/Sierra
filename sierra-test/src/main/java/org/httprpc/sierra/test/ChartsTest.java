@@ -1,0 +1,385 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.httprpc.sierra.test;
+
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.extras.FlatSVGIcon;
+import org.httprpc.sierra.ChartPane;
+import org.httprpc.sierra.Outlet;
+import org.httprpc.sierra.RowPanel;
+import org.httprpc.sierra.UILoader;
+import org.httprpc.sierra.charts.BarChart;
+import org.httprpc.sierra.charts.CandlestickChart;
+import org.httprpc.sierra.charts.Chart;
+import org.httprpc.sierra.charts.DataSet;
+import org.httprpc.sierra.charts.OHLC;
+import org.httprpc.sierra.charts.PieChart;
+import org.httprpc.sierra.charts.ScatterChart;
+import org.httprpc.sierra.charts.TimeSeriesChart;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import java.awt.BasicStroke;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.TreeMap;
+
+import static org.httprpc.kilo.util.Collections.*;
+import static org.httprpc.kilo.util.Optionals.*;
+
+public class ChartsTest extends JFrame implements Runnable {
+    private @Outlet ChartPane<Chart<?, ?>> pieChartPane = null;
+    private @Outlet RowPanel pieChartLegendPanel = null;
+
+    private @Outlet ChartPane<Chart<?, ?>> barChartPane = null;
+    private @Outlet RowPanel barChartLegendPanel = null;
+
+    private @Outlet ChartPane<Chart<?, ?>> timeSeriesChartPane = null;
+    private @Outlet RowPanel timeSeriesChartLegendPanel = null;
+
+    private @Outlet ChartPane<Chart<?, ?>> scatterChartPane = null;
+    private @Outlet RowPanel scatterChartLegendPanel = null;
+
+    private @Outlet ChartPane<Chart<?, ?>> candlestickChartPane = null;
+    private @Outlet RowPanel candlestickChartLegendPanel = null;
+
+    private ChartsTest() {
+        super("Charts Test");
+
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+    }
+
+    @Override
+    public void run() {
+        setContentPane(UILoader.load(this, "ChartsTest.xml"));
+
+        pieChartPane.setChart(createPieChart());
+
+        for (var dataSet : pieChartPane.getChart().getDataSets()) {
+            pieChartLegendPanel.add(new JLabel(dataSet.getLabel(),
+                new PieChart.LegendIcon(dataSet),
+                SwingConstants.LEADING));
+        }
+
+        barChartPane.setChart(createBarChart());
+
+        for (var dataSet : barChartPane.getChart().getDataSets()) {
+            barChartLegendPanel.add(new JLabel(dataSet.getLabel(),
+                new BarChart.LegendIcon(dataSet),
+                SwingConstants.LEADING));
+        }
+
+        timeSeriesChartPane.setChart(createTimeSeriesChart());
+
+        for (var dataSet : timeSeriesChartPane.getChart().getDataSets()) {
+            timeSeriesChartLegendPanel.add(new JLabel(dataSet.getLabel(),
+                new TimeSeriesChart.LegendIcon(dataSet),
+                SwingConstants.LEADING));
+        }
+
+        scatterChartPane.setChart(createScatterChart());
+
+        for (var dataSet : scatterChartPane.getChart().getDataSets()) {
+            scatterChartLegendPanel.add(new JLabel(dataSet.getLabel(),
+                new ScatterChart.LegendIcon(dataSet),
+                SwingConstants.LEADING));
+        }
+
+        candlestickChartPane.setChart(createCandlestickChart());
+
+        for (var dataSet : candlestickChartPane.getChart().getDataSets()) {
+            candlestickChartLegendPanel.add(new JLabel(dataSet.getLabel(),
+                new CandlestickChart.LegendIcon(dataSet),
+                SwingConstants.LEADING));
+        }
+
+        setSize(640, 480);
+        setVisible(true);
+    }
+
+    private PieChart<Month, Double> createPieChart() {
+        var doughnut = coalesce(map(System.getProperty("doughnut"), Boolean::valueOf), () -> false);
+
+        var pieChart = new PieChart<Month, Double>(doughnut);
+
+        pieChart.setDataSets(createCategoryDataSets());
+
+        return pieChart;
+    }
+
+    private BarChart<Month, Double> createBarChart() {
+        var horizontal = coalesce(map(System.getProperty("horizontal"), Boolean::valueOf), () -> false);
+        var stacked = coalesce(map(System.getProperty("stacked"), Boolean::valueOf), () -> false);
+
+        var barChart = new BarChart<Month, Double>(horizontal, stacked);
+
+        barChart.setBarTransparency(0.75);
+
+        barChart.setDomainLabelTransform(month -> month.getDisplayName(TextStyle.FULL, Locale.getDefault()));
+
+        var rangeLabelFormat = NumberFormat.getNumberInstance();
+
+        rangeLabelFormat.setMinimumFractionDigits(1);
+        rangeLabelFormat.setMaximumFractionDigits(1);
+
+        barChart.setRangeLabelTransform(rangeLabelFormat::format);
+
+        barChart.setHorizontalGridLineStroke(new BasicStroke(1.0f,
+            BasicStroke.CAP_SQUARE,
+            BasicStroke.JOIN_MITER,
+            1.0f, new float[] {2.0f}, 0.0f));
+
+        var dataSets = createCategoryDataSets();
+
+        barChart.setDataSets(dataSets);
+
+        return barChart;
+    }
+
+    private List<DataSet<Month, Double>> createCategoryDataSets() {
+        var northDataSet = new DataSet<Month, Double>("North", UILoader.getColor("light-coral"));
+        var southDataSet = new DataSet<Month, Double>("South", UILoader.getColor("orange"));
+        var eastDataSet = new DataSet<Month, Double>("East", UILoader.getColor("gold"));
+        var centralDataSet = new DataSet<Month, Double>("Central", UILoader.getColor("light-green"));
+        var westDataSet = new DataSet<Month, Double>("West", UILoader.getColor("light-blue"));
+
+        var months = sortedSetOf(Month.JANUARY, Month.FEBRUARY, Month.MARCH);
+
+        var dataSets = listOf(northDataSet, southDataSet, eastDataSet, centralDataSet, westDataSet);
+
+        for (var dataSet : dataSets) {
+            var dataPoints = new TreeMap<Month, Double>();
+
+            for (var month : months) {
+                dataPoints.put(month, Math.random() * 100.0);
+            }
+
+            dataSet.setDataPoints(dataPoints);
+        }
+
+        return dataSets;
+    }
+
+    private TimeSeriesChart<Integer, Double> createTimeSeriesChart() {
+        var showValueMarkers = coalesce(map(System.getProperty("showValueMarkers"), Boolean::valueOf), () -> false);
+
+        var colors = listOf(
+            UILoader.getColor("light-coral"),
+            UILoader.getColor("light-green"),
+            UILoader.getColor("light-blue")
+        );
+
+        var m = colors.size();
+
+        var dataSets = new ArrayList<DataSet<Integer, Double>>(m);
+
+        var n = showValueMarkers ? 25 : 250;
+
+        for (var i = 0; i < m; i++) {
+            var dataSet = new DataSet<Integer, Double>(String.format("Data Set %d", i + 1), colors.get(i));
+
+            var dataPoints = new TreeMap<Integer, Double>();
+
+            for (var j = 0; j < n; j++) {
+                double value;
+                if (j == 0) {
+                    value = 100 - i * 100;
+                } else {
+                    value = dataPoints.get(j - 1) + (1.0 - Math.random() * 2.0) * 25.0;
+                }
+
+                dataPoints.put(j, value);
+            }
+
+            dataSet.setDataPoints(dataPoints);
+
+            dataSets.add(dataSet);
+        }
+
+        var timeSeriesChart = new TimeSeriesChart<Integer, Double>(key -> key, Number::intValue);
+
+        timeSeriesChart.setShowValueMarkers(showValueMarkers);
+
+        var rangeLabelFormat = NumberFormat.getNumberInstance();
+
+        rangeLabelFormat.setMinimumFractionDigits(1);
+        rangeLabelFormat.setMaximumFractionDigits(1);
+
+        timeSeriesChart.setRangeLabelTransform(rangeLabelFormat::format);
+
+        timeSeriesChart.setVerticalGridLineStroke(new BasicStroke(1.0f,
+            BasicStroke.CAP_SQUARE,
+            BasicStroke.JOIN_MITER,
+            1.0f, new float[] {2.0f}, 0.0f));
+
+        timeSeriesChart.setDataSets(dataSets);
+
+        if (!showValueMarkers) {
+            var icon = new FlatSVGIcon(getClass().getResource("icons/flag_24dp.svg"));
+
+            icon = icon.derive(18, 18);
+
+            icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> timeSeriesChart.getMarkerColor()));
+
+            timeSeriesChart.setDomainMarkers(sortedMapOf(
+                entry(100, new Chart.Marker("Marker 1", icon)),
+                entry(200, new Chart.Marker("Marker 2", icon))
+            ));
+        }
+
+        return timeSeriesChart;
+    }
+
+    private ScatterChart<Integer, Double> createScatterChart() {
+        var showTrendLines = coalesce(map(System.getProperty("showTrendLines"), Boolean::valueOf), () -> false);
+
+        var colors = listOf(
+            UILoader.getColor("light-coral"),
+            UILoader.getColor("light-green"),
+            UILoader.getColor("light-blue")
+        );
+
+        var m = colors.size();
+
+        var dataSets = new ArrayList<DataSet<Integer, Double>>(m);
+
+        var n = 15;
+
+        for (var i = 0; i < m; i++) {
+            var dataSet = new DataSet<Integer, Double>(String.format("Group %d", i + 1), colors.get(i));
+
+            dataSet.setStroke(new BasicStroke(1.0f));
+
+            var dataPoints = new TreeMap<Integer, Double>();
+
+            var previousValue = i * 25.0;
+
+            for (var j = 0; j < n; j++) {
+                var value = previousValue + Math.random() * (i + 1) * 25;
+
+                dataPoints.put(j + 1, value);
+
+                previousValue = value;
+            }
+
+            dataSet.setDataPoints(dataPoints);
+
+            dataSets.add(dataSet);
+        }
+
+        var scatterChart = new ScatterChart<Integer, Double>(key -> key, Number::intValue);
+
+        scatterChart.setShowTrendLines(showTrendLines);
+        scatterChart.setValueMarkerTransparency(0.5);
+
+        scatterChart.setDomainLabelCount(n);
+
+        var rangeLabelFormat = NumberFormat.getNumberInstance();
+
+        rangeLabelFormat.setMinimumFractionDigits(1);
+        rangeLabelFormat.setMaximumFractionDigits(1);
+
+        scatterChart.setRangeLabelTransform(rangeLabelFormat::format);
+
+        scatterChart.setDataSets(dataSets);
+
+        return scatterChart;
+    }
+
+    private CandlestickChart<LocalDate> createCandlestickChart() {
+        var colors = listOf(
+            UILoader.getColor("light-coral"),
+            UILoader.getColor("light-green"),
+            UILoader.getColor("light-blue")
+        );
+
+        var m = colors.size();
+
+        var dataSets = new ArrayList<DataSet<LocalDate, OHLC>>(m);
+
+        var n = 15;
+
+        var maximum = 250.0;
+
+        for (var i = 0; i < m; i++) {
+            var dataSet = new DataSet<LocalDate, OHLC>(String.format("Stock %d", i + 1), colors.get(i));
+
+            var dataPoints = new TreeMap<LocalDate, OHLC>();
+
+            var localDate = LocalDate.now();
+            var previousClose = Double.NaN;
+
+            for (var j = 0; j < n; j++) {
+                double open;
+                if (j == 0) {
+                    open = Math.random() * maximum;
+                } else {
+                    open = previousClose;
+                }
+
+                var high = open + Math.random() * (maximum - open) * 0.5;
+                var low = open - Math.random() * open * 0.5;
+
+                var close = low + Math.random() * (high - low);
+
+                dataPoints.put(localDate, new OHLC(open, high, low, close));
+
+                localDate = localDate.minusDays(1);
+
+                previousClose = close;
+            }
+
+            dataSet.setDataPoints(dataPoints);
+
+            dataSets.add(dataSet);
+        }
+
+        var candlestickChart = new CandlestickChart<LocalDate>();
+
+        var dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
+
+        candlestickChart.setDomainLabelTransform(dateFormatter::format);
+
+        var rangeLabelFormat = NumberFormat.getCurrencyInstance();
+
+        candlestickChart.setRangeLabelTransform(rangeLabelFormat::format);
+
+        candlestickChart.setDataSets(dataSets);
+
+        return candlestickChart;
+    }
+
+    public static void main(String[] args) {
+        var dark = coalesce(map(System.getProperty("dark"), Boolean::valueOf), () -> false);
+
+        if (dark) {
+            FlatDarkLaf.setup();
+        } else {
+            FlatLightLaf.setup();
+        }
+
+        SwingUtilities.invokeLater(new ChartsTest());
+    }
+}

@@ -12,9 +12,19 @@
  * limitations under the License.
  */
 
+plugins {
+    id 'application'
+}
+
 dependencies {
     implementation project(':sierra')
+    implementation "com.formdev:flatlaf:${flatLafVersion}"
+    implementation "com.formdev:flatlaf-extras:${flatLafVersion}"
+    implementation 'org.pushing-pixels:radiance-theming:8.5.0'
+}
 
-    implementation 'com.formdev:flatlaf:3.5.4:no-natives'
-    implementation 'com.formdev:flatlaf-extras:3.5.4'
+tasks.withType(JavaCompile) {
+    options.compilerArgs = [
+        '-parameters'
+    ]
 }

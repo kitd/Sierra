@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE column-panel SYSTEM "sierra.dtd">
+
+<column-panel padding="8" opaque="true">
+    <column-panel spacing="4" alignToGrid="true">
+        <row-panel alignToBaseline="true">
+            <label text="number1" alignmentX="1.0"/>
+            <number-field name="numberField1" columns="8" alignmentX="0.0"/>
+        </row-panel>
+        <row-panel alignToBaseline="true">
+            <label text="number2" alignmentX="1.0"/>
+            <number-field name="numberField2" columns="8" alignmentX="0.0"/>
+        </row-panel>
+
+        <row-panel alignToBaseline="true">
+            <label text="validatedText1" alignmentX="1.0"/>
+            <validated-text-field name="validatedTextField1" columns="8" alignmentX="0.0"/>
+        </row-panel>
+        <row-panel alignToBaseline="true">
+            <label text="validatedText2" alignmentX="1.0"/>
+            <validated-text-field name="validatedTextField2" columns="8" pattern="validatedText2Pattern" alignmentX="0.0"/>
+        </row-panel>
+
+        <separator/>
+
+        <row-panel>
+            <spacer/>
+            <button name="submitButton" text="submit"/>
+        </row-panel>
+    </column-panel>
+
+    <spacer weight="1"/>
+
+    <label name="messageLabel" horizontalAlignment="center"/>
+</column-panel>

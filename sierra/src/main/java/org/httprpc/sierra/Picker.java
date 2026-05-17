@@ -18,11 +18,15 @@ import javax.swing.JComponent;
 import javax.swing.JTextField;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
-import java.awt.Component;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.FocusEvent;
-import java.awt.event.HierarchyBoundsListener;
-import java.awt.event.HierarchyEvent;
 import java.awt.event.KeyEvent;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Abstract base class for picker components.
@@ -31,29 +35,28 @@ public abstract class Picker extends JTextField {
     private HorizontalAlignment popupHorizontalAlignment = HorizontalAlignment.LEADING;
     private VerticalAlignment popupVerticalAlignment = VerticalAlignment.BOTTOM;
 
-    private JComponent popupComponent = null;
+    private List<ChangeListener> changeListeners = new LinkedList<>();
+
     private Popup popup = null;
 
-    private HierarchyBoundsListener hierarchyBoundsListener = new HierarchyBoundsListener() {
+    private ComponentListener componentListener = new ComponentAdapter() {
         @Override
-        public void ancestorMoved(HierarchyEvent event) {
+        public void componentResized(ComponentEvent event) {
             hidePopup();
         }
 
         @Override
-        public void ancestorResized(HierarchyEvent event) {
-            // No-op
+        public void componentMoved(ComponentEvent event) {
+            hidePopup();
+        }
+
+        @Override
+        public void componentHidden(ComponentEvent event) {
+            hidePopup();
         }
     };
 
-    /**
-     * Constructs a new picker.
-     *
-     * @param columns
-     * The column count.
-     */
-    protected Picker(int columns) {
-        super(columns);
+    Picker() {
     }
 
     /**
@@ -105,48 +108,61 @@ public abstract class Picker extends JTextField {
     }
 
     /**
-     * Processes a focus event.
-     * {@inheritDoc}
+     * Adds a change listener.
+     *
+     * @param listener
+     * The change listenener to add.
      */
+    public void addChangeListener(ChangeListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException();
+        }
+
+        changeListeners.add(listener);
+    }
+
+    /**
+     * Removes a change listener.
+     *
+     * @param listener
+     * The change listenener to remove.
+     */
+    public void removeChangeListener(ChangeListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException();
+        }
+
+        changeListeners.remove(listener);
+    }
+
+    /**
+     * Fires a change event.
+     */
+    protected void fireStateChanged() {
+        var event = new ChangeEvent(this);
+
+        for (var listener : changeListeners) {
+            listener.stateChanged(event);
+        }
+    }
+
     @Override
     protected void processFocusEvent(FocusEvent event) {
         super.processFocusEvent(event);
 
         switch (event.getID()) {
             case FocusEvent.FOCUS_GAINED -> showPopup();
-            case FocusEvent.FOCUS_LOST -> {
-                if (!inPopup(event.getOppositeComponent())) {
-                    hidePopup();
-                } else {
-                    requestFocus();
-                }
-            }
+            case FocusEvent.FOCUS_LOST -> hidePopup();
         }
     }
 
-    private boolean inPopup(Component component) {
-        while (component != null) {
-            if (component.equals(popupComponent)) {
-                return true;
-            }
-
-            component = component.getParent();
-        }
-
-        return false;
-    }
-
-    /**
-     * Processes a key event.
-     * {@inheritDoc}
-     */
     @Override
     protected void processKeyEvent(KeyEvent event) {
-        super.processKeyEvent(event);
-
         if (event.getID() == KeyEvent.KEY_PRESSED) {
             hidePopup();
         }
+
+        super.processKeyEvent(event);
     }
 
     /**
@@ -173,23 +189,18 @@ public abstract class Picker extends JTextField {
             return;
         }
 
-        popupComponent = getPopupComponent();
+        var popupComponent = getPopupComponent();
 
         popupComponent.applyComponentOrientation(getComponentOrientation());
 
         var size = getSize();
         var popupSize = popupComponent.getPreferredSize();
 
-        var x = switch (popupHorizontalAlignment) {
-            case LEADING, TRAILING -> {
-                if (getComponentOrientation().isLeftToRight() ^ popupHorizontalAlignment == HorizontalAlignment.TRAILING) {
-                    yield 0;
-                } else {
-                    yield size.width - popupSize.width;
-                }
-
-            }
+        var x = switch (popupHorizontalAlignment.getLocalizedValue(Picker.this)) {
+            case LEFT -> 0;
+            case RIGHT -> size.width - popupSize.width;
             case CENTER -> (size.width - popupSize.width) / 2;
+            default -> throw new UnsupportedOperationException();
         };
 
         var y = switch (popupVerticalAlignment) {
@@ -204,7 +215,13 @@ public abstract class Picker extends JTextField {
 
         popup.show();
 
-        addHierarchyBoundsListener(hierarchyBoundsListener);
+        var parent = getParent();
+
+        while (parent != null) {
+            parent.addComponentListener(componentListener);
+
+            parent = parent.getParent();
+        }
     }
 
     /**
@@ -219,6 +236,12 @@ public abstract class Picker extends JTextField {
 
         popup = null;
 
-        removeHierarchyBoundsListener(hierarchyBoundsListener);
+        var parent = getParent();
+
+        while (parent != null) {
+            parent.removeComponentListener(componentListener);
+
+            parent = parent.getParent();
+        }
     }
 }

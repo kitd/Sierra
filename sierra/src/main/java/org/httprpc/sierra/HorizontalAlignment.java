@@ -14,22 +14,61 @@
 
 package org.httprpc.sierra;
 
+import javax.swing.JComponent;
+import javax.swing.SwingConstants;
+
 /**
  * Horizontal alignment options.
  */
-public enum HorizontalAlignment {
+public enum HorizontalAlignment implements ConstantAdapter {
     /**
-     * Leading alignment.
+     * Left alignment.
      */
-    LEADING,
+    LEFT("left", SwingConstants.LEFT),
 
     /**
-     * Trailing alignment.
+     * Right alignment.
      */
-    TRAILING,
+    RIGHT("right", SwingConstants.RIGHT),
 
     /**
      * Center alignment.
      */
-    CENTER
+    CENTER("center", SwingConstants.CENTER),
+
+    /**
+     * Leading alignment.
+     */
+    LEADING("leading", SwingConstants.LEADING),
+
+    /**
+     * Trailing alignment.
+     */
+    TRAILING("trailing", SwingConstants.TRAILING);
+
+    private final String key;
+    private final int value;
+
+    HorizontalAlignment(String key, int value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public String getKey() {
+        return key;
+    }
+
+    @Override
+    public int getValue() {
+        return value;
+    }
+
+    HorizontalAlignment getLocalizedValue(JComponent component) {
+        return switch (this) {
+            case LEFT, RIGHT, CENTER -> this;
+            case LEADING -> component.getComponentOrientation().isLeftToRight() ? LEFT : RIGHT;
+            case TRAILING -> component.getComponentOrientation().isLeftToRight() ? RIGHT : LEFT;
+        };
+    }
 }

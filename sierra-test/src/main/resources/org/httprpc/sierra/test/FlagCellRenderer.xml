@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE row-panel SYSTEM "sierra.dtd">
+
+<row-panel spacing="4" padding="4" opaque="true">
+    <image-pane name="imagePane" size="30, 30" scaleMode="fill-width"/>
+
+    <column-panel>
+        <label name="nameLabel" styleClass="h4"/>
+        <label name="descriptionLabel"/>
+    </column-panel>
+</row-panel>

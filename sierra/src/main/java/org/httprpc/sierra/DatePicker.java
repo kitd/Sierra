@@ -22,14 +22,13 @@ import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import java.awt.event.ActionEvent;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.chrono.Chronology;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
@@ -41,7 +40,7 @@ import java.util.Locale;
 /**
  * Text field that supports local date entry.
  */
-public class DatePicker extends Picker {
+public class DatePicker extends TemporalPicker {
     private class CalendarPanel extends ColumnPanel {
         private class DateButton extends JButton {
             LocalDate date = null;
@@ -66,8 +65,6 @@ public class DatePicker extends Picker {
             protected void fireActionPerformed(ActionEvent event) {
                 setDate(date);
 
-                DatePicker.super.fireActionPerformed();
-
                 hidePopup();
             }
         }
@@ -79,8 +76,6 @@ public class DatePicker extends Picker {
         CalendarPanel() {
             setSpacing(6);
 
-            monthSpinner = new JSpinner();
-
             var zoneId = ZoneId.systemDefault();
 
             var value = Date.from(date.atStartOfDay(zoneId).toInstant());
@@ -88,9 +83,17 @@ public class DatePicker extends Picker {
             var start = (minimumDate == null) ? null : Date.from(minimumDate.withDayOfMonth(1).atStartOfDay(zoneId).toInstant());
             var end = (maximumDate == null) ? null : Date.from(maximumDate.atStartOfDay(zoneId).toInstant());
 
+            monthSpinner = new JSpinner();
+
             monthSpinner.setModel(new SpinnerDateModel(value, start, end, Calendar.MONTH));
-            monthSpinner.setEditor(new JSpinner.DateEditor(monthSpinner, "MMMM yyyy"));
             monthSpinner.setFocusable(false);
+
+            var dateEditor = new JSpinner.DateEditor(monthSpinner, "MMMM yyyy");
+
+            dateEditor.setFocusable(false);
+
+            monthSpinner.setEditor(dateEditor);
+
             monthSpinner.addChangeListener(event -> updateMonth());
 
             add(monthSpinner);
@@ -182,54 +185,60 @@ public class DatePicker extends Picker {
     private LocalDate minimumDate = null;
     private LocalDate maximumDate = null;
 
-    private final InputVerifier inputVerifier = new InputVerifier() {
-        @Override
-        public boolean verify(JComponent input) {
-            try {
-                var date = LocalDate.parse(getText(), dateFormatter);
-
-                if (date.equals(DatePicker.this.date)) {
-                    return true;
-                }
-
-                if (!validate(date)) {
-                    selectAll();
-
-                    return false;
-                }
-
-                DatePicker.this.date = date;
-
-                DatePicker.super.fireActionPerformed();
-            } catch (DateTimeParseException exception) {
-                setText(dateFormatter.format(date));
-            }
-
-            return true;
-        }
-    };
-
-    private static final String pattern;
-    private static final DateTimeFormatter dateFormatter;
-
-    static {
-        var locale = Locale.getDefault();
-
-        pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.SHORT, null, Chronology.ofLocale(locale), locale);
-        dateFormatter = DateTimeFormatter.ofPattern(pattern);
-    }
+    private static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
 
     /**
      * Constructs a new date picker.
      */
     public DatePicker() {
-        super(8);
-
-        setInputVerifier(inputVerifier);
-
         setDate(LocalDate.now());
 
-        putClientProperty("JTextField.placeholderText", pattern);
+        setInputVerifier(new InputVerifier() {
+            LocalDate date = null;
+
+            @Override
+            public boolean verify(JComponent input) {
+                if (input != DatePicker.this) {
+                    throw new IllegalArgumentException();
+                }
+
+                try {
+                    date = LocalDate.parse(getText(), dateFormatter);
+
+                    return true;
+                } catch (DateTimeParseException exception) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean shouldYieldFocus(JComponent source, JComponent target) {
+                if (verify(source)) {
+                    if (validate(date)) {
+                        if (!date.equals(DatePicker.this.date)) {
+                            DatePicker.this.date = date;
+
+                            fireStateChanged();
+                        }
+                    }
+
+                    applyValue();
+
+                    date = null;
+
+                    return true;
+                } else {
+                    UIManager.getLookAndFeel().provideErrorFeedback(source);
+
+                    return false;
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void applyValue() {
+        setText(dateFormatter.format(date));
     }
 
     /**
@@ -253,9 +262,13 @@ public class DatePicker extends Picker {
             throw new IllegalArgumentException();
         }
 
-        setText(dateFormatter.format(date));
+        if (!date.equals(this.date)) {
+            this.date = date;
 
-        this.date = date;
+            applyValue();
+
+            fireStateChanged();
+        }
     }
 
     private boolean validate(LocalDate date) {
@@ -282,7 +295,7 @@ public class DatePicker extends Picker {
     public void setMinimumDate(LocalDate minimumDate) {
         if (minimumDate != null) {
             if (maximumDate != null && minimumDate.isAfter(maximumDate)) {
-                throw new IllegalStateException();
+                throw new IllegalArgumentException();
             }
 
             if (date != null && date.isBefore(minimumDate)) {
@@ -312,7 +325,7 @@ public class DatePicker extends Picker {
     public void setMaximumDate(LocalDate maximumDate) {
         if (maximumDate != null) {
             if (minimumDate != null && maximumDate.isBefore(minimumDate)) {
-                throw new IllegalStateException();
+                throw new IllegalArgumentException();
             }
 
             if (date != null && date.isAfter(maximumDate)) {
@@ -323,28 +336,11 @@ public class DatePicker extends Picker {
         this.maximumDate = maximumDate;
     }
 
-    /**
-     * Verifies the contents of the text field.
-     * {@inheritDoc}
-     */
-    @Override
-    protected void fireActionPerformed() {
-        inputVerifier.verify(this);
-    }
-
-    /**
-     * Returns {@code true}.
-     * {@inheritDoc}
-     */
     @Override
     protected boolean isPopupEnabled() {
         return true;
     }
 
-    /**
-     * Returns a date picker popup component.
-     * {@inheritDoc}
-     */
     @Override
     protected JComponent getPopupComponent() {
         return new CalendarPanel();

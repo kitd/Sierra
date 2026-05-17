@@ -14,11 +14,22 @@
 
 package org.httprpc.sierra;
 
+import java.awt.Component;
+
+import static org.httprpc.kilo.util.Optionals.*;
+
 /**
  * Abstract base class for box panels.
  */
 public abstract class BoxPanel extends LayoutPanel {
     private int spacing = 0;
+
+    BoxPanel() {
+    }
+
+    double getWeight(int index) {
+        return coalesce(map((Number)getConstraints(index), Number::doubleValue), () -> Double.NaN);
+    }
 
     /**
      * Returns the amount of space between successive sub-components. The
@@ -47,35 +58,15 @@ public abstract class BoxPanel extends LayoutPanel {
         revalidate();
     }
 
-    /**
-     * Returns the weight associated with the component at a given index.
-     *
-     * @param index
-     * The component index.
-     *
-     * @return
-     * The component's weight, or {@link Double#NaN} if no weight is associated
-     * with the component.
-     */
-    protected double getWeight(int index) {
-        var constraints = getConstraints(index);
-
-        if (constraints == null) {
-            return Double.NaN;
+    @Override
+    protected void addImpl(Component component, Object constraints, int index) {
+        if (constraints != null && !(constraints instanceof Number)) {
+            throw new IllegalArgumentException("Invalid constraints.");
         }
 
-        if (!(constraints instanceof Double)) {
-            throw new IllegalStateException();
-        }
-
-        return (double)constraints;
+        super.addImpl(component, constraints, index);
     }
 
-    /**
-     * Calculates the panel's baseline, as determined by the first component
-     * that reports a valid baseline.
-     * {@inheritDoc}
-     */
     @Override
     public int getBaseline(int width, int height) {
         setSize(width, height);

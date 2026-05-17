@@ -1,5 +1,19 @@
 .gradle
-.idea/sonarlint
+sierra/charts
 **/build
 **/out
 **/.DS_Store
+# Eclipse specific #
+####################
+.classpath
+.project
+.settings/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+*.launch

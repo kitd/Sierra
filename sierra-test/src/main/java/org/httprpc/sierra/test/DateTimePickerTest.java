@@ -16,77 +16,83 @@ package org.httprpc.sierra.test;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import org.httprpc.sierra.DatePicker;
+import org.httprpc.sierra.Outlet;
 import org.httprpc.sierra.TimePicker;
-import org.httprpc.sierra.VerticalAlignment;
+import org.httprpc.sierra.UILoader;
 
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JSeparator;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
 import java.awt.ComponentOrientation;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
-
-import static org.httprpc.sierra.UIBuilder.*;
+import java.util.ResourceBundle;
 
 public class DateTimePickerTest extends JFrame implements Runnable {
-    private JLabel selectionLabel;
+    private @Outlet DatePicker datePicker = null;
+
+    private @Outlet TimePicker timePicker = null;
+    private @Outlet JComboBox<Integer> minuteIntervalComboBox = null;
+    private @Outlet JCheckBox strictCheckBox = null;
+
+    private @Outlet JButton submitButton = null;
+
+    private @Outlet JLabel selectionLabel = null;
+
+    static {
+        var language = System.getProperty("language");
+
+        if (language != null) {
+            var country = System.getProperty("country");
+
+            if (country != null) {
+                Locale.setDefault(Locale.of(language, country));
+            }
+        }
+    }
+
+    private static final ResourceBundle resourceBundle = ResourceBundle.getBundle(DateTimePickerTest.class.getName());
 
     private DateTimePickerTest() {
-        super("Date Picker Test");
+        super(resourceBundle.getString("title"));
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 
     @Override
     public void run() {
-        var dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
-        var timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
+        setContentPane(UILoader.load(this, "DateTimePickerTest.xml", resourceBundle));
 
-        setContentPane(column(
-            cell(new JLabel()).weightBy(1).with(label -> {
-                label.setHorizontalAlignment(SwingConstants.CENTER);
+        var now = LocalDate.now();
 
-                selectionLabel = label;
-            }),
-            row(4,
-                glue(),
-                cell(new DatePicker()).with(datePicker -> {
-                    var now = LocalDate.now();
+        datePicker.setMinimumDate(now.minusMonths(3));
+        datePicker.setMaximumDate(now.plusMonths(3));
 
-                    datePicker.setMinimumDate(now.minusMonths(3));
-                    datePicker.setMaximumDate(now.plusMonths(3));
+        datePicker.addChangeListener(event -> System.out.println(datePicker.getDate()));
 
-                    datePicker.setPopupVerticalAlignment(VerticalAlignment.TOP);
+        var minimumTime = LocalTime.of(6, 0);
+        var maximumTime = LocalTime.of(18, 0);
 
-                    datePicker.addActionListener(event -> showSelection(dateFormatter, datePicker.getDate()));
-                }),
-                cell(new TimePicker(30)).with(timePicker -> {
-                    timePicker.setMinimumTime(LocalTime.of(6, 0));
-                    timePicker.setMaximumTime(LocalTime.of(18, 0));
+        timePicker.setMinimumTime(minimumTime);
+        timePicker.setMaximumTime(maximumTime);
 
-                    timePicker.setPopupVerticalAlignment(VerticalAlignment.TOP);
+        timePicker.addChangeListener(event -> System.out.println(timePicker.getTime()));
 
-                    timePicker.addActionListener(event -> showSelection(timeFormatter, timePicker.getTime()));
-                }),
-                cell(new JSeparator(SwingConstants.VERTICAL)),
-                cell(new TimePicker()).with(timePicker -> {
-                    timePicker.setMinimumTime(LocalTime.of(6, 0));
-                    timePicker.setMaximumTime(LocalTime.of(18, 0));
+        minuteIntervalComboBox.setModel(new DefaultComboBoxModel<>(new Integer[] {1, 2, 3, 4, 5, 6, 10, 15, 20, 30}));
+        minuteIntervalComboBox.addActionListener(event -> timePicker.setMinuteInterval((Integer)minuteIntervalComboBox.getSelectedItem()));
 
-                    timePicker.setPopupVerticalAlignment(VerticalAlignment.TOP);
+        strictCheckBox.addActionListener(event -> timePicker.setStrict(strictCheckBox.isSelected()));
 
-                    timePicker.addActionListener(event -> showSelection(timeFormatter, timePicker.getTime()));
-                }),
-                glue()
-            )
-        ).with(contentPane -> contentPane.setBorder(new EmptyBorder(8, 8, 8, 8))).getComponent());
+        submitButton.addActionListener(event -> showSelection());
+
+        rootPane.setDefaultButton(submitButton);
 
         applyComponentOrientation(ComponentOrientation.getOrientation(Locale.getDefault()));
 
@@ -94,8 +100,13 @@ public class DateTimePickerTest extends JFrame implements Runnable {
         setVisible(true);
     }
 
-    private void showSelection(DateTimeFormatter formatter, TemporalAccessor value) {
-        var message = String.format("You selected %s.", formatter.format(value));
+    private void showSelection() {
+        var dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
+        var timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
+
+        var message = String.format(resourceBundle.getString("selectionFormat"),
+            dateFormatter.format(datePicker.getDate()),
+            timeFormatter.format(timePicker.getTime()));
 
         selectionLabel.setText(message);
     }

@@ -14,41 +14,36 @@
 
 package org.httprpc.sierra;
 
+import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.LayoutManager;
 import java.util.List;
 
 /**
- * Arranges sub-components horizontally in a row, optionally pinning component
- * edges to the container's top and bottom insets. The panel's preferred width
- * is determined as the total preferred width of its unweighted sub-components
- * plus horizontal insets. By default, preferred height is the maximum
- * preferred height of all sub-components plus vertical insets, and
- * sub-components are pinned to top and bottom. When aligning to baseline,
- * preferred height is the maximum ascent/descent of all sub-components plus
- * vertical insets, and sub-components are not pinned to top and bottom.
+ * Arranges sub-components in a horizontal line. The panel's preferred width is
+ * the total preferred width of its unweighted sub-components plus horizontal
+ * insets. By default, preferred height is the maximum preferred height of all
+ * sub-components plus vertical insets. When aligning to baseline, preferred
+ * height is the maximum ascent/descent of all sub-components plus vertical
+ * insets.
  */
 public class RowPanel extends BoxPanel {
-    // Row layout manager
     private class RowLayoutManager extends AbstractLayoutManager {
         @Override
-        public Dimension preferredLayoutSize() {
-            var parent = getParent();
-
-            List<Integer> columnWidths = null;
-            List<Double> columnWeights = null;
-
-            var spacing = getSpacing();
-
-            if (parent instanceof ColumnPanel columnPanel && columnPanel.getAlignToGrid()) {
-                columnWidths = columnPanel.getColumnWidths();
-                columnWeights = columnPanel.getColumnWeights();
-
-                spacing = columnPanel.getRowSpacing();
-            }
-
+        public Dimension preferredLayoutSize(Container container) {
             var size = getSize();
             var insets = getInsets();
+
+            var parent = getParent();
+
+            List<Integer> columnWidths;
+            int spacing;
+            if (parent instanceof ColumnPanel columnPanel && columnPanel.getAlignToGrid()) {
+                columnWidths = columnPanel.getColumnWidths();
+                spacing = columnPanel.getSpacing();
+            } else {
+                columnWidths = null;
+                spacing = getSpacing();
+            }
 
             var preferredWidth = 0;
             var totalWeight = 0.0;
@@ -62,7 +57,7 @@ public class RowPanel extends BoxPanel {
 
                 var weight = getWeight(i);
 
-                if (Double.isNaN(weight)) {
+                if (Double.isNaN(weight) || columnWidths != null) {
                     component.setSize(Integer.MAX_VALUE, height);
                     component.setSize(component.getPreferredSize());
 
@@ -78,12 +73,6 @@ public class RowPanel extends BoxPanel {
 
                     preferredWidth += width;
                 } else {
-                    if (columnWeights != null) {
-                        weight = Math.max(columnWeights.get(i), weight);
-
-                        columnWeights.set(i, weight);
-                    }
-
                     totalWeight += weight;
                 }
             }
@@ -101,22 +90,22 @@ public class RowPanel extends BoxPanel {
             for (var i = 0; i < n; i++) {
                 var component = getComponent(i);
 
-                var weight = getWeight(i);
+                if (columnWidths == null) {
+                    var weight = getWeight(i);
 
-                if (!Double.isNaN(weight)) {
-                    var columnWidth = (columnWidths == null) ? 0 : columnWidths.get(i);
+                    if (!Double.isNaN(weight)) {
+                        int width;
+                        if (i < n - 1) {
+                            width = (int)Math.round(excessWidth * (weight / totalWeight));
 
-                    int width;
-                    if (i < n - 1) {
-                        width = (columnWidth > 0) ? columnWidth : (int)Math.round(excessWidth * (weight / totalWeight));
+                            remainingWidth -= width;
+                        } else {
+                            width = remainingWidth;
+                        }
 
-                        remainingWidth -= width;
-                    } else {
-                        width = remainingWidth;
+                        component.setSize(width, height);
+                        component.setSize(width, component.getPreferredSize().height);
                     }
-
-                    component.setSize(width, height);
-                    component.setSize(width, component.getPreferredSize().height);
                 }
 
                 preferredHeight = Math.max(preferredHeight, component.getHeight());
@@ -139,23 +128,21 @@ public class RowPanel extends BoxPanel {
         }
 
         @Override
-        public void layoutContainer() {
-            var parent = getParent();
-
-            List<Integer> columnWidths = null;
-            List<Double> columnWeights = null;
-
-            var spacing = getSpacing();
-
-            if (parent instanceof ColumnPanel columnPanel && columnPanel.getAlignToGrid()) {
-                columnWidths = columnPanel.getColumnWidths();
-                columnWeights = columnPanel.getColumnWeights();
-
-                spacing = columnPanel.getRowSpacing();
-            }
-
+        public void layoutContainer(Container container) {
             var size = getSize();
             var insets = getInsets();
+
+            var parent = getParent();
+
+            List<Integer> columnWidths;
+            int spacing;
+            if (parent instanceof ColumnPanel columnPanel && columnPanel.getAlignToGrid()) {
+                columnWidths = columnPanel.getColumnWidths();
+                spacing = columnPanel.getSpacing();
+            } else {
+                columnWidths = null;
+                spacing = getSpacing();
+            }
 
             var excessWidth = Math.max(size.width - (insets.left + insets.right), 0);
             var totalWeight = 0.0;
@@ -169,7 +156,7 @@ public class RowPanel extends BoxPanel {
 
                 var weight = getWeight(i);
 
-                if (Double.isNaN(weight)) {
+                if (Double.isNaN(weight) || columnWidths != null) {
                     component.setSize(Integer.MAX_VALUE, height);
                     component.setSize(component.getPreferredSize());
 
@@ -197,31 +184,13 @@ public class RowPanel extends BoxPanel {
                         }
                     }
 
-                    if (columnWeights != null && i == columnWeights.size()) {
-                        columnWeights.add(Double.NaN);
-                    }
-
                     excessWidth -= columnWidth;
                 } else {
-                    if (columnWeights != null) {
-                        if (i == columnWidths.size()) {
-                            columnWeights.add(weight);
-                        } else {
-                            weight = Math.max(columnWeights.get(i), weight);
-
-                            columnWeights.set(i, weight);
-                        }
-                    }
-
-                    if (columnWidths != null && i == columnWidths.size()) {
-                        columnWidths.add(0);
-                    }
-
                     totalWeight += weight;
                 }
             }
 
-            excessWidth = Math.max(0, excessWidth - spacing * (n - 1));
+            excessWidth = Math.max(excessWidth - spacing * (n - 1), 0);
 
             var remainingWidth = excessWidth;
 
@@ -243,16 +212,11 @@ public class RowPanel extends BoxPanel {
             for (var i = 0; i < n; i++) {
                 var component = getComponent(i);
 
-                var weight = getWeight(i);
+                if (columnWidths == null) {
+                    var weight = getWeight(i);
 
-                if (!Double.isNaN(weight)) {
-                    var width = (columnWidths == null) ? 0 : columnWidths.get(i);
-
-                    if (width == 0) {
-                        if (columnWeights != null) {
-                            weight = columnWeights.get(i);
-                        }
-
+                    if (!Double.isNaN(weight)) {
+                        int width;
                         if (i < n - 1) {
                             width = (int)Math.round(excessWidth * (weight / totalWeight));
 
@@ -260,13 +224,12 @@ public class RowPanel extends BoxPanel {
                         } else {
                             width = remainingWidth;
                         }
-                    }
 
-                    if (alignToBaseline) {
                         component.setSize(width, height);
-                        component.setSize(width, component.getPreferredSize().height);
-                    } else {
-                        component.setSize(width, height);
+
+                        if (alignToBaseline) {
+                            component.setSize(width, component.getPreferredSize().height);
+                        }
                     }
                 }
 
@@ -334,32 +297,19 @@ public class RowPanel extends BoxPanel {
                 }
             }
         }
+
+        static int adjustSize(int preferredSize, int size, float alignment) {
+            return Math.round(preferredSize + Math.max(size - preferredSize, 0) * (1.0f - Math.abs((0.5f - alignment) / 0.5f)));
+        }
     }
 
     private boolean alignToBaseline = false;
-
-    private static int adjustSize(int preferredSize, int size, float alignment) {
-        return Math.round(preferredSize + Math.max(size - preferredSize, 0) * (1.0f - Math.abs((0.5f - alignment) / 0.5f)));
-    }
 
     /**
      * Constructs a new row panel.
      */
     public RowPanel() {
         setLayout(new RowLayoutManager());
-    }
-
-    /**
-     * Sets the layout manager.
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLayout(LayoutManager layoutManager) {
-        if (layoutManager != null && !(layoutManager instanceof RowLayoutManager)) {
-            throw new IllegalArgumentException();
-        }
-
-        super.setLayout(layoutManager);
     }
 
     /**
@@ -377,7 +327,7 @@ public class RowPanel extends BoxPanel {
      * Toggles baseline alignment.
      *
      * @param alignToBaseline
-     * {@code true} to align to baseline; {@code false}, otherwise.
+     * {@code true} to enable baseline alignment; {@code false} to disable it.
      */
     public void setAlignToBaseline(boolean alignToBaseline) {
         this.alignToBaseline = alignToBaseline;
@@ -385,10 +335,6 @@ public class RowPanel extends BoxPanel {
         revalidate();
     }
 
-    /**
-     * Calculates the panel's baseline.
-     * {@inheritDoc}
-     */
     @Override
     public int getBaseline(int width, int height) {
         return alignToBaseline ? super.getBaseline(width, height) : -1;

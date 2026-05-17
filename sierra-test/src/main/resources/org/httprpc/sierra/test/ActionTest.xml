@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE row-panel SYSTEM "sierra.dtd">
+
+<row-panel padding="8" opaque="true">
+    <spacer weight="1"/>
+
+    <column-panel spacing="8">
+        <button name="greetingButton" text="prompt"/>
+        <label name="greetingLabel" horizontalAlignment="center"/>
+    </column-panel>
+
+    <spacer weight="1"/>
+</row-panel>

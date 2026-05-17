@@ -12,4 +12,79 @@
  * limitations under the License.
  */
 
-apply from: rootProject.file('publish.gradle')
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+
+    withJavadocJar()
+    withSourcesJar()
+}
+
+dependencies {
+    api "org.httprpc:kilo-client:${kiloVersion}"
+
+    compileOnly "com.formdev:flatlaf:${flatLafVersion}"
+    compileOnly "com.formdev:flatlaf-extras:${flatLafVersion}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testImplementation "com.formdev:flatlaf:${flatLafVersion}"
+    testImplementation "com.formdev:flatlaf-extras:${flatLafVersion}"
+    testImplementation 'org.apache.xmlgraphics:batik-all:1.19'
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
+
+publishing {
+    repositories {
+        maven {
+            credentials {
+                username = project.properties['centralPortalUsername'] ?: ''
+                password = project.properties['centralPortalPassword'] ?: ''
+            }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            artifactId = project.name
+
+            from components.java
+
+            pom {
+                name = project.name
+                description = "${projectDescription}"
+                url = "${projectURL}"
+                licenses {
+                    license {
+                        name = "${licenseName}"
+                        url = "${licenseURL}"
+                    }
+                }
+                developers {
+                    developer {
+                        name = "${developerName}"
+                        email = "${developerEmail}"
+                    }
+                }
+                scm {
+                    connection = "${scmConnection}"
+                    url = "${scmURL}"
+                }
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications
+}

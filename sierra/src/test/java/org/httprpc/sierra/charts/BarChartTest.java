@@ -1,0 +1,695 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.httprpc.sierra.charts;
+
+import com.formdev.flatlaf.extras.FlatSVGIcon;
+import org.junit.jupiter.api.Test;
+
+import java.awt.Color;
+import java.awt.Insets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+
+import static org.httprpc.kilo.util.Collections.*;
+
+public class BarChartTest extends ChartTest {
+    @Test
+    public void testPositiveValues() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet = new DataSet<Integer, Integer>("Positive Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 10),
+            entry(3, 15),
+            entry(4, 20),
+            entry(5, 25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-positive-values.svg", chart);
+    }
+
+    @Test
+    public void testPositiveValuesHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, false);
+
+        var dataSet = new DataSet<Integer, Integer>("Positive Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 10),
+            entry(3, 15),
+            entry(4, 20),
+            entry(5, 25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-positive-values-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testNegativeValues() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet = new DataSet<Integer, Integer>("Negative Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, -5),
+            entry(2, -10),
+            entry(3, -15),
+            entry(4, -20),
+            entry(5, -25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-negative-values.svg", chart);
+    }
+
+    @Test
+    public void testNegativeValuesHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, false);
+
+        var dataSet = new DataSet<Integer, Integer>("Negative Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, -5),
+            entry(2, -10),
+            entry(3, -15),
+            entry(4, -20),
+            entry(5, -25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-negative-values-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testMixedValues() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet = new DataSet<Integer, Integer>("Mixed Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 10),
+            entry(3, -15),
+            entry(4, -20),
+            entry(5, -25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-mixed-values.svg", chart);
+    }
+
+    @Test
+    public void testMixedValuesHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, false);
+
+        var dataSet = new DataSet<Integer, Integer>("Mixed Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 10),
+            entry(3, -15),
+            entry(4, -20),
+            entry(5, -25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-mixed-values-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testMissingValue() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(2, 10),
+            entry(3, 15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2));
+
+        compare("bar-chart-missing-value.svg", chart);
+    }
+
+    @Test
+    public void testMissingValueHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, false);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(2, 10),
+            entry(3, 15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2));
+
+        compare("bar-chart-missing-value-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testZeroValues() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet = new DataSet<Integer, Integer>("Zero Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 0),
+            entry(2, 0),
+            entry(3, null)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-zero-values.svg", chart);
+    }
+
+    @Test
+    public void testZeroValuesHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, false);
+
+        var dataSet = new DataSet<Integer, Integer>("Zero Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 0),
+            entry(2, 0),
+            entry(3, null)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-zero-values-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testNoValues() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet = new DataSet<Integer, Integer>("No Values", Color.RED);
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-no-values.svg", chart);
+    }
+
+    @Test
+    public void testNoValuesHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, false);
+
+        var dataSet = new DataSet<Integer, Integer>("No Values", Color.RED);
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-no-values-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testPositiveValuesStacked() throws Exception {
+        var chart = new BarChart<Integer, Integer>(false, true);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 15),
+            entry(3, 10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, 20),
+            entry(2, 25),
+            entry(3, 15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-positive-values-stacked.svg", chart);
+    }
+
+    @Test
+    public void testPositiveValuesHorizontalStacked() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, true);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 15),
+            entry(3, 10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, 20),
+            entry(2, 25),
+            entry(3, 15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-positive-values-horizontal-stacked.svg", chart);
+    }
+
+    @Test
+    public void testNegativeValuesStacked() throws Exception {
+        var chart = new BarChart<Integer, Integer>(false, true);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, -10),
+            entry(2, -20),
+            entry(3, -30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, -5),
+            entry(2, -15),
+            entry(3, -10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, -20),
+            entry(2, -25),
+            entry(3, -15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-negative-values-stacked.svg", chart);
+    }
+
+    @Test
+    public void testNegativeValuesHorizontalStacked() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, true);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, -10),
+            entry(2, -20),
+            entry(3, -30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, -5),
+            entry(2, -15),
+            entry(3, -10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, -20),
+            entry(2, -25),
+            entry(3, -15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-negative-values-horizontal-stacked.svg", chart);
+    }
+
+    @Test
+    public void testMixedValuesStacked() throws Exception {
+        var chart = new BarChart<Integer, Integer>(false, true);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, -5),
+            entry(2, -15),
+            entry(3, 10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, -20),
+            entry(2, 25),
+            entry(3, -15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-mixed-values-stacked.svg", chart);
+    }
+
+    @Test
+    public void testMixedValuesHorizontalStacked() throws Exception {
+        var chart = new BarChart<Integer, Integer>(true, true);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, -5),
+            entry(2, -15),
+            entry(3, 10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, -20),
+            entry(2, 25),
+            entry(3, -15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-mixed-values-horizontal-stacked.svg", chart);
+    }
+
+    @Test
+    public void testTransparency() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        chart.setBarTransparency(0.5);
+
+        var dataSet1 = new DataSet<Integer, Integer>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10),
+            entry(2, 20),
+            entry(3, 30)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Integer>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 15),
+            entry(3, 10)
+        ));
+
+        var dataSet3 = new DataSet<Integer, Integer>("Data Set 3", Color.BLUE);
+
+        dataSet3.setDataPoints(sortedMapOf(
+            entry(1, 20),
+            entry(2, 25),
+            entry(3, 15)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2, dataSet3));
+
+        compare("bar-chart-transparency.svg", chart);
+    }
+
+    @Test
+    public void testDomainLabelVisibility() throws Exception {
+        var chart = new BarChart<LocalDate, Double>();
+
+        var dataSet = new DataSet<LocalDate, Double>("Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(LocalDate.of(2025, 12, 17), 0.0),
+            entry(LocalDate.of(2025, 12, 18), 5.0),
+            entry(LocalDate.of(2025, 12, 19), 10.0),
+            entry(LocalDate.of(2025, 12, 20), 15.0),
+            entry(LocalDate.of(2025, 12, 21), 20.0),
+            entry(LocalDate.of(2025, 12, 22), 25.0),
+            entry(LocalDate.of(2025, 12, 23), 30.0),
+            entry(LocalDate.of(2025, 12, 24), 35.0),
+            entry(LocalDate.of(2025, 12, 25), 40.0),
+            entry(LocalDate.of(2025, 12, 26), 45.0),
+            entry(LocalDate.of(2025, 12, 27), 50.0)
+        ));
+
+        var dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG);
+
+        chart.setDomainLabelTransform(dateFormatter::format);
+
+        chart.setDataSets(listOf(dataSet));
+
+        compare("bar-chart-domain-label-visibility.svg", chart);
+    }
+
+    @Test
+    public void testDomainMarkers() throws Exception {
+        var chart = new BarChart<Integer, Double>();
+
+        var dataSet = new DataSet<Integer, Double>("Data Set", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 10.0),
+            entry(2, 20.0),
+            entry(3, 30.0)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        var icon = new FlatSVGIcon(getClass().getResource("icons/flag_24dp.svg"));
+
+        icon = icon.derive(18, 18);
+
+        chart.setDomainMarkers(sortedMapOf(
+            entry(dataSet.getDataPoints().firstKey(), new Chart.Marker("First", icon)),
+            entry(dataSet.getDataPoints().lastKey(), new Chart.Marker("Last", icon))
+        ));
+
+        compare("bar-chart-domain-markers.svg", chart);
+    }
+
+    @Test
+    public void testDomainMarkersHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Double>(true, false);
+
+        var dataSet = new DataSet<Integer, Double>("Data Set", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 10.0),
+            entry(2, 20.0),
+            entry(3, 30.0)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        var icon = new FlatSVGIcon(getClass().getResource("icons/flag_24dp.svg"));
+
+        icon = icon.derive(18, 18);
+
+        chart.setDomainMarkers(sortedMapOf(
+            entry(dataSet.getDataPoints().firstKey(), new Chart.Marker("First", icon)),
+            entry(dataSet.getDataPoints().lastKey(), new Chart.Marker("Last", icon))
+        ));
+
+        compare("bar-chart-domain-markers-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testRangeMarkers() throws Exception {
+        var chart = new BarChart<Integer, Double>();
+
+        var dataSet = new DataSet<Integer, Double>("Data Set", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 10.0),
+            entry(2, 20.0),
+            entry(3, 30.0)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        var icon = new FlatSVGIcon(getClass().getResource("icons/flag_24dp.svg"));
+
+        icon = icon.derive(18, 18);
+
+        chart.setRangeMarkers(sortedMapOf(
+            entry(0.1, new Chart.Marker("Bottom", icon)),
+            entry(10.0, new Chart.Marker("10", null)),
+            entry(20.0, new Chart.Marker("20", null)),
+            entry(29.9, new Chart.Marker("Top", icon))
+        ));
+
+        compare("bar-chart-range-markers.svg", chart);
+    }
+
+    @Test
+    public void testRangeMarkersHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Double>(true, false);
+
+        var dataSet = new DataSet<Integer, Double>("Data Set", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 10.0),
+            entry(2, 20.0),
+            entry(3, 30.0)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        var icon = new FlatSVGIcon(getClass().getResource("icons/flag_24dp.svg"));
+
+        icon = icon.derive(18, 18);
+
+        chart.setRangeMarkers(sortedMapOf(
+            entry(0.1, new Chart.Marker("Left", icon)),
+            entry(10.0, new Chart.Marker("10", null)),
+            entry(20.0, new Chart.Marker("20", null)),
+            entry(29.9, new Chart.Marker("Right", icon))
+        ));
+
+        compare("bar-chart-range-markers-horizontal.svg", chart);
+    }
+
+    @Test
+    public void testCustomMargins() throws Exception {
+        var chart = new BarChart<Integer, Integer>();
+
+        var dataSet = new DataSet<Integer, Integer>("Values", Color.RED);
+
+        dataSet.setDataPoints(sortedMapOf(
+            entry(1, 5),
+            entry(2, 10),
+            entry(3, 15),
+            entry(4, 20),
+            entry(5, 25)
+        ));
+
+        chart.setDataSets(listOf(dataSet));
+
+        chart.validate();
+
+        var margins = chart.getMargins();
+
+        chart.setMargins(new Insets(20, margins.left * 4, margins.bottom * 4, 20));
+
+        compare("bar-chart-custom-margins.svg", chart);
+    }
+
+    @Test
+    public void testSizeToFit() throws Exception {
+        var chart = new BarChart<Integer, Double>();
+
+        var dataSet1 = new DataSet<Integer, Double>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10.0),
+            entry(2, 20.0),
+            entry(3, 30.0)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Double>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, 20.0),
+            entry(2, 40.0),
+            entry(3, 60.0)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2));
+
+        chart.setHeight(480);
+
+        compare("bar-chart-size-to-fit.svg", chart, true);
+    }
+
+    @Test
+    public void testSizeToFitHorizontal() throws Exception {
+        var chart = new BarChart<Integer, Double>(true, false);
+
+        var dataSet1 = new DataSet<Integer, Double>("Data Set 1", Color.RED);
+
+        dataSet1.setDataPoints(sortedMapOf(
+            entry(1, 10.0),
+            entry(2, 20.0),
+            entry(3, 30.0)
+        ));
+
+        var dataSet2 = new DataSet<Integer, Double>("Data Set 2", Color.GREEN);
+
+        dataSet2.setDataPoints(sortedMapOf(
+            entry(1, 20.0),
+            entry(2, 40.0),
+            entry(3, 60.0)
+        ));
+
+        chart.setDataSets(listOf(dataSet1, dataSet2));
+
+        chart.setWidth(640);
+
+        compare("bar-chart-size-to-fit-horizontal.svg", chart, true);
+    }
+}

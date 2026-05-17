@@ -20,45 +20,27 @@ import javax.swing.JButton;
 import javax.swing.JPopupMenu;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import java.awt.Component;
 import java.awt.event.FocusEvent;
 
 /**
  * Displays a popup menu when pressed.
  */
 public class MenuButton extends JButton {
-    private JPopupMenu popupMenu = null;
-
     private HorizontalAlignment popupHorizontalAlignment = HorizontalAlignment.LEADING;
     private VerticalAlignment popupVerticalAlignment = VerticalAlignment.BOTTOM;
-
-    private PopupMenuListener popupMenuListener = new PopupMenuListener() {
-        @Override
-        public void popupMenuWillBecomeVisible(PopupMenuEvent event) {
-            // No-op
-        }
-
-        @Override
-        public void popupMenuWillBecomeInvisible(PopupMenuEvent event) {
-            // No-op
-        }
-
-        @Override
-        public void popupMenuCanceled(PopupMenuEvent event) {
-            ignorePress = true;
-        }
-    };
 
     private boolean ignorePress = false;
 
     /**
-     * Constructs a menu button.
+     * Constructs a new menu button.
      */
     public MenuButton() {
         this(null, null);
     }
 
     /**
-     * Constructs a menu button.
+     * Constructs a new menu button.
      *
      * @param text
      * The button text.
@@ -68,7 +50,7 @@ public class MenuButton extends JButton {
     }
 
     /**
-     * Constructs a menu button.
+     * Constructs a new menu button.
      *
      * @param icon
      * The button icon.
@@ -78,7 +60,7 @@ public class MenuButton extends JButton {
     }
 
     /**
-     * Constructs a menu button.
+     * Constructs a new menu button.
      *
      * @param text
      * The button text.
@@ -89,28 +71,46 @@ public class MenuButton extends JButton {
     public MenuButton(String text, Icon icon) {
         super(text, icon);
 
+        var popupMenu = new JPopupMenu();
+
+        popupMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent event) {
+                repaint();
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent event) {
+                repaint();
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent event) {
+                ignorePress = true;
+            }
+        });
+
+        setComponentPopupMenu(popupMenu);
+
         setModel(new DefaultButtonModel() {
+            @Override
+            public boolean isSelected() {
+                return popupMenu.isVisible();
+            }
+
             @Override
             public void setPressed(boolean pressed) {
                 super.setPressed(pressed);
-
-                if (popupMenu == null) {
-                    return;
-                }
 
                 if (pressed && !ignorePress) {
                     var size = getSize();
                     var popupMenuSize = popupMenu.getPreferredSize();
 
-                    var x = switch (popupHorizontalAlignment) {
-                        case LEADING, TRAILING -> {
-                            if (getComponentOrientation().isLeftToRight() ^ popupHorizontalAlignment == HorizontalAlignment.TRAILING) {
-                                yield 0;
-                            } else {
-                                yield size.width - popupMenuSize.width;
-                            }
-                        }
+                    var x = switch (popupHorizontalAlignment.getLocalizedValue(MenuButton.this)) {
+                        case LEFT -> 0;
+                        case RIGHT -> size.width - popupMenuSize.width;
                         case CENTER -> (size.width - popupMenuSize.width) / 2;
+                        default -> throw new UnsupportedOperationException();
                     };
 
                     var y = switch (popupVerticalAlignment) {
@@ -132,34 +132,6 @@ public class MenuButton extends JButton {
                 ignorePress = false;
             }
         });
-    }
-
-    /**
-     * Returns the popup menu.
-     *
-     * @return
-     * The popup menu, or {@code null} if no popup menu is set.
-     */
-    public JPopupMenu getPopupMenu() {
-        return popupMenu;
-    }
-
-    /**
-     * Sets the popup menu.
-     *
-     * @param popupMenu
-     * The popup menu, or {@code null} for no popup menu.
-     */
-    public void setPopupMenu(JPopupMenu popupMenu) {
-        if (this.popupMenu != null) {
-            this.popupMenu.removePopupMenuListener(popupMenuListener);
-        }
-
-        if (popupMenu != null) {
-            popupMenu.addPopupMenuListener(popupMenuListener);
-        }
-
-        this.popupMenu = popupMenu;
     }
 
     /**
@@ -211,9 +183,38 @@ public class MenuButton extends JButton {
     }
 
     /**
-     * Processes a focus event.
-     * {@inheritDoc}
+     * Adds a component to the menu button.
+     *
+     * @param component
+     * The component to add.
+     *
+     * @return
+     * The component that was added.
      */
+    @Override
+    public Component add(Component component) {
+        if (component == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return getComponentPopupMenu().add(component);
+    }
+
+    /**
+     * Removes a component from the menu button.
+     *
+     * @param component
+     * The component to remove.
+     */
+    @Override
+    public void remove(Component component) {
+        if (component == null) {
+            throw new IllegalArgumentException();
+        }
+
+        getComponentPopupMenu().remove(component);
+    }
+
     @Override
     protected void processFocusEvent(FocusEvent event) {
         super.processFocusEvent(event);

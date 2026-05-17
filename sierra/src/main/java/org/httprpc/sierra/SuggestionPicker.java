@@ -39,12 +39,12 @@ public class SuggestionPicker extends Picker {
         }
 
         @Override
-        public void addListDataListener(ListDataListener l) {
+        public void addListDataListener(ListDataListener listener) {
             // No-op
         }
 
         @Override
-        public void removeListDataListener(ListDataListener l) {
+        public void removeListDataListener(ListDataListener listener) {
             // No-op
         }
     }
@@ -52,16 +52,6 @@ public class SuggestionPicker extends Picker {
     private List<String> suggestions = Collections.emptyList();
 
     private int maximumRowCount = 8;
-
-    /**
-     * Constructs a new suggestion picker.
-     *
-     * @param columns
-     * The column count.
-     */
-    public SuggestionPicker(int columns) {
-        super(columns);
-    }
 
     /**
      * Returns the suggestion list.
@@ -88,7 +78,7 @@ public class SuggestionPicker extends Picker {
     }
 
     /**
-     * Returns the maximum row count.
+     * Returns the maximum row count. The default value is 8.
      *
      * @return
      * The maximum row count.
@@ -111,20 +101,11 @@ public class SuggestionPicker extends Picker {
         this.maximumRowCount = maximumRowCount;
     }
 
-    /**
-     * Returns {@code true} if the suggestion list is not empty;
-     * {@code false}, otherwise.
-     * {@inheritDoc}
-     */
     @Override
     protected boolean isPopupEnabled() {
         return !suggestions.isEmpty();
     }
 
-    /**
-     * Returns a suggestion picker popup component.
-     * {@inheritDoc}
-     */
     @Override
     protected JComponent getPopupComponent() {
         var list = new JList<String>();
@@ -143,9 +124,9 @@ public class SuggestionPicker extends Picker {
         list.addListSelectionListener(event -> {
             setText(list.getSelectedValue());
 
-            fireActionPerformed();
-
             hidePopup();
+
+            fireStateChanged();
         });
 
         return scrollPane;

@@ -15,77 +15,55 @@
 package org.httprpc.sierra.test;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import org.httprpc.sierra.Outlet;
 import org.httprpc.sierra.RowPanel;
+import org.httprpc.sierra.UILoader;
 
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JRadioButton;
-import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
 import java.awt.ComponentOrientation;
-
-import static org.httprpc.sierra.UIBuilder.*;
+import java.util.ResourceBundle;
 
 public class OrientationTest extends JFrame implements Runnable {
-    private RowPanel rowPanel;
+    private @Outlet RowPanel rowPanel = null;
 
-    private JRadioButton leftToRightButton;
-    private JRadioButton rightToLeftButton;
+    private @Outlet JRadioButton leftToRightButton = null;
+    private @Outlet JRadioButton rightToLeftButton = null;
+
+    private @Outlet JButton applyOrientationButton = null;
+
+    private static final ResourceBundle resourceBundle = ResourceBundle.getBundle(OrientationTest.class.getName());
 
     private OrientationTest() {
-        super("Orientation Test");
+        super(resourceBundle.getString("title"));
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 
     @Override
     public void run() {
-        var buttonGroup = new ButtonGroup();
+        setContentPane(UILoader.load(this, "OrientationTest.xml", resourceBundle));
 
-        setContentPane(column(4,
-            row(4,
-                cell(new JButton("1")),
-                cell(new JButton("2")),
-                cell(new JButton("3")),
-                cell(new JButton("4")),
-                cell(new JButton("5"))
-            ).with(rowPanel -> this.rowPanel = rowPanel),
+        leftToRightButton.setSelected(true);
 
-            cell(new JSeparator()),
-
-            row(4,
-                glue(),
-                cell(new JRadioButton("Left to right", true)).with(button -> {
-                    buttonGroup.add(button);
-
-                    leftToRightButton = button;
-                }),
-
-                cell(new JRadioButton("Right to left")).with(button -> {
-                    buttonGroup.add(button);
-
-                    rightToLeftButton = button;
-                }),
-
-                cell(new JButton("Apply orientation")).with(button -> button.addActionListener(event -> {
-                    if (leftToRightButton.isSelected()) {
-                        rowPanel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-                    } else if (rightToLeftButton.isSelected()) {
-                        rowPanel.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
-                    } else {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    rowPanel.revalidate();
-                })),
-                glue()
-            )
-        ).with(contentPane -> contentPane.setBorder(new EmptyBorder(8, 8, 8, 8))).getComponent());
+        applyOrientationButton.addActionListener(event -> applyOrientation());
 
         pack();
         setVisible(true);
+    }
+
+    private void applyOrientation() {
+        if (leftToRightButton.isSelected()) {
+            rowPanel.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+        } else if (rightToLeftButton.isSelected()) {
+            rowPanel.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
+        rowPanel.revalidate();
     }
 
     public static void main(String[] args) {

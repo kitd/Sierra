@@ -14,27 +14,24 @@
 
 package org.httprpc.sierra;
 
+import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.LayoutManager;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.httprpc.kilo.util.Iterables.*;
+
 /**
- * Arranges sub-components vertically in a column, pinning component edges to
- * the container's leading and trailing insets. The panel's preferred width is
- * determined as the maximum preferred width of its unweighted sub-components
- * plus horizontal insets. Preferred height is the total preferred height of
- * all unweighted sub-components, plus vertical insets.
+ * Arranges sub-components in a vertical line. The panel's preferred width is
+ * the maximum preferred width of its sub-components plus horizontal insets.
+ * Preferred height is the total preferred height of all unweighted
+ * sub-components plus vertical insets.
  */
 public class ColumnPanel extends BoxPanel {
-    // Column layout manager
     private class ColumnLayoutManager extends AbstractLayoutManager {
         @Override
-        public Dimension preferredLayoutSize() {
+        public Dimension preferredLayoutSize(Container container) {
             columnWidths.clear();
-            columnWeights.clear();
-
-            maximumRowSpacing = 0;
 
             var size = getSize();
             var insets = getInsets();
@@ -49,26 +46,25 @@ public class ColumnPanel extends BoxPanel {
             for (var i = 0; i < n; i++) {
                 var component = getComponent(i);
 
-                if (Double.isNaN(getWeight(i))) {
-                    component.setSize(width, Integer.MAX_VALUE);
+                component.setSize(width, Integer.MAX_VALUE);
 
-                    if (alignToGrid && component instanceof RowPanel rowPanel) {
-                        component.doLayout();
+                if (alignToGrid && component instanceof RowPanel) {
+                    component.doLayout();
+                } else {
+                    var preferredSize = component.getPreferredSize();
 
-                        maximumRowSpacing = Math.max(maximumRowSpacing, rowPanel.getSpacing());
-                    } else {
-                        var preferredSize = component.getPreferredSize();
+                    preferredWidth = Math.max(preferredWidth, preferredSize.width);
 
-                        preferredWidth = Math.max(preferredWidth, preferredSize.width);
+                    if (Double.isNaN(getWeight(i))) {
                         preferredHeight += preferredSize.height;
                     }
                 }
             }
 
-            if (alignToGrid) {
-                var totalColumnWidth = columnWidths.stream().reduce(0, Integer::sum);
+            var spacing = getSpacing();
 
-                preferredWidth = totalColumnWidth + (columnWidths.size() - 1) * getRowSpacing();
+            if (alignToGrid) {
+                preferredWidth = sumOf(columnWidths, Integer::intValue) + (columnWidths.size() - 1) * spacing;
 
                 for (var i = 0; i < n; i++) {
                     var component = getComponent(i);
@@ -79,17 +75,14 @@ public class ColumnPanel extends BoxPanel {
                 }
             }
 
-            preferredHeight += getSpacing() * (n - 1);
+            preferredHeight += spacing * (n - 1);
 
             return new Dimension(preferredWidth + insets.left + insets.right, preferredHeight + insets.top + insets.bottom);
         }
 
         @Override
-        public void layoutContainer() {
+        public void layoutContainer(Container container) {
             columnWidths.clear();
-            columnWeights.clear();
-
-            maximumRowSpacing = 0;
 
             var size = getSize();
             var insets = getInsets();
@@ -109,10 +102,8 @@ public class ColumnPanel extends BoxPanel {
                 if (Double.isNaN(weight)) {
                     component.setSize(width, Integer.MAX_VALUE);
 
-                    if (alignToGrid && component instanceof RowPanel rowPanel) {
+                    if (alignToGrid && component instanceof RowPanel) {
                         component.doLayout();
-
-                        maximumRowSpacing = Math.max(maximumRowSpacing, rowPanel.getSpacing());
                     } else {
                         component.setSize(width, component.getPreferredSize().height);
 
@@ -137,7 +128,7 @@ public class ColumnPanel extends BoxPanel {
 
             var spacing = getSpacing();
 
-            excessHeight = Math.max(0, excessHeight - spacing * (n - 1));
+            excessHeight = Math.max(excessHeight - spacing * (n - 1), 0);
 
             var remainingHeight = excessHeight;
 
@@ -167,12 +158,9 @@ public class ColumnPanel extends BoxPanel {
         }
     }
 
-    private boolean alignToGrid = false;
-
     private List<Integer> columnWidths = new LinkedList<>();
-    private List<Double> columnWeights = new LinkedList<>();
 
-    private int maximumRowSpacing= 0;
+    private boolean alignToGrid = false;
 
     /**
      * Constructs a new column panel.
@@ -181,25 +169,16 @@ public class ColumnPanel extends BoxPanel {
         setLayout(new ColumnLayoutManager());
     }
 
-    /**
-     * Sets the layout manager.
-     * {@inheritDoc}
-     */
-    @Override
-    public void setLayout(LayoutManager layoutManager) {
-        if (layoutManager != null && !(layoutManager instanceof ColumnLayoutManager)) {
-            throw new IllegalArgumentException();
-        }
-
-        super.setLayout(layoutManager);
+    List<Integer> getColumnWidths() {
+        return columnWidths;
     }
 
     /**
-     * Indicates that row descendants will be vertically aligned in a grid. The
+     * Indicates that nested elements will be vertically aligned in a grid. The
      * default value is {@code false}.
      *
      * @return
-     * {@code true} if row descendants will be aligned to grid; {@code false},
+     * {@code true} if nested elements will be aligned to grid; {@code false},
      * otherwise.
      */
     public boolean getAlignToGrid() {
@@ -210,41 +189,11 @@ public class ColumnPanel extends BoxPanel {
      * Toggles grid alignment.
      *
      * @param alignToGrid
-     * {@code true} to align row descendants to grid; {@code false}, otherwise.
+     * {@code true} to enable grid alignment; {@code false} to disable it.
      */
     public void setAlignToGrid(boolean alignToGrid) {
         this.alignToGrid = alignToGrid;
 
         revalidate();
-    }
-
-    /**
-     * Returns the calculated column widths.
-     *
-     * @return
-     * The calculated column widths.
-     */
-    protected List<Integer> getColumnWidths() {
-        return columnWidths;
-    }
-
-    /**
-     * Returns the calculated column weights.
-     *
-     * @return
-     * The calculated column weights.
-     */
-    protected List<Double> getColumnWeights() {
-        return columnWeights;
-    }
-
-    /**
-     * Returns the calculated row spacing.
-     *
-     * @return
-     * The calculated row spacing.
-     */
-    protected int getRowSpacing() {
-        return Math.max(getSpacing(), maximumRowSpacing);
     }
 }
